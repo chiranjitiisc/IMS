@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What makes an MD integrator good? | Lecture 11 companion</title>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10); --wash:rgba(11,11,11,.04);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --s1-wash:rgba(42,120,214,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.05);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --s1-wash:rgba(57,135,229,.18);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.05);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --s1-wash:rgba(57,135,229,.18);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:120px}
+body{margin:0;background:var(--page);color:var(--ink);font:16px/1.58 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+p{margin:0 0 12px}
+a{color:inherit}
+
+/* header */
+.hero{padding:44px 0 22px}
+.kicker{font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+h1{font-size:clamp(28px,4.6vw,44px);line-height:1.08;margin:10px 0 14px;letter-spacing:-.022em;font-weight:680;text-wrap:balance}
+.lede{font-size:18px;line-height:1.5;color:var(--ink2);max-width:64ch;margin:0}
+
+/* sticky control bar */
+.bar{position:sticky;top:0;z-index:20;background:var(--page);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.bar .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;padding-top:9px;padding-bottom:9px}
+.ctl{display:flex;align-items:center;gap:10px;min-width:0}
+.ctl-l{font-size:13px;color:var(--ink2);font-weight:600;white-space:nowrap}
+.bar nav{margin-left:auto;display:flex;gap:2px;font-size:13px}
+.bar nav a{text-decoration:none;color:var(--ink2);padding:5px 9px;border-radius:7px;white-space:nowrap}
+.bar nav a:hover{background:var(--wash);color:var(--ink)}
+@media (max-width:900px){.bar nav{display:none}}
+output{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;min-width:3.2ch;display:inline-block}
+
+/* controls */
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;padding:2px;background:var(--surface);flex-wrap:wrap}
+.seg button{appearance:none;border:0;background:transparent;color:var(--ink2);font:inherit;font-size:13.5px;padding:5px 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.seg button:hover{background:var(--wash)}
+.seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--ink);color:var(--surface);font-weight:600}
+button.btn{appearance:none;font:inherit;font-size:14px;padding:7px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap}
+button.btn:hover{background:var(--wash)}
+button.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink);font-weight:600}
+button.btn.primary:hover{opacity:.88}
+button.btn:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,canvas:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+input[type=range]{accent-color:var(--ink);width:160px;max-width:44vw}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:14px 0}
+.status{font-size:14px;color:var(--ink2)}
+
+/* sections */
+section{padding:46px 0 6px}
+section+section{border-top:1px solid var(--border);margin-top:40px}
+h2{font-size:clamp(22px,3vw,28px);letter-spacing:-.015em;margin:0 0 10px;line-height:1.2;font-weight:660}
+h2 .num{display:inline-block;color:var(--muted);font-weight:500;margin-right:12px;font-variant-numeric:tabular-nums}
+h3{font-size:17px;margin:26px 0 8px;font-weight:650}
+.lead{font-size:17px;max-width:72ch;color:var(--ink)}
+.body{max-width:72ch}
+.look{border-left:3px solid var(--ink);padding:2px 0 2px 14px;margin:14px 0;max-width:72ch;color:var(--ink2)}
+.look b{color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+.split.wide-right{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+@media (max-width:820px){.grid3,.split,.split.wide-right{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.grid2{grid-template-columns:minmax(0,1fr)}}
+
+/* keys and legends */
+.key{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:middle;margin-right:8px;background:var(--ink2)}
+.key.k1{background:var(--s1)} .key.k2{background:var(--s2)} .key.k3{background:var(--s3)} .key.k0{background:var(--ink);height:2px}
+.key.dot{width:9px;height:9px;border-radius:50%}
+.key.ring{width:10px;height:10px;border-radius:50%;background:transparent;border:1px solid var(--muted)}
+.key.fill{width:12px;height:12px;border-radius:3px;opacity:.5}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13.5px;color:var(--ink2);margin:10px 0}
+.legend span{white-space:nowrap}
+.ptitle{font-weight:650;font-size:15px;margin-bottom:6px;display:flex;align-items:center}
+.psub{font-size:13px;color:var(--ink2);margin:-2px 0 6px}
+ul.cast{list-style:none;padding:0;margin:8px 0 0;max-width:76ch}
+ul.cast li{padding:7px 0 7px 26px;position:relative;border-top:1px solid var(--border)}
+ul.cast li:first-child{border-top:0}
+ul.cast li .key{position:absolute;left:0;top:19px}
+
+/* definitions */
+dl.defs{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0}
+dl.defs dt{font-weight:600;white-space:nowrap}
+dl.defs dd{margin:0;color:var(--ink2)}
+
+/* canvases */
+canvas{display:block;width:100%;touch-action:pan-y}
+.cv-sq{aspect-ratio:1/0.97}
+.cv-line{aspect-ratio:16/10;min-height:190px}
+.cv-wide{aspect-ratio:16/7;min-height:200px}
+.cv-toon{height:118px}
+.chart-h{font-size:14px;font-weight:650;margin:2px 0 2px}
+.chart-s{font-size:13px;color:var(--ink2);margin:0 0 6px}
+
+/* stat tiles */
+.stat{margin-top:8px;padding-top:10px;border-top:1px solid var(--border)}
+.stat-l{font-size:12.5px;color:var(--ink2)}
+.stat-v{font-size:24px;font-weight:650;letter-spacing:-.01em;line-height:1.25;margin:1px 0}
+.stat-n{font-size:13px;color:var(--ink2);min-height:2.6em}
+.readout{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13.5px;color:var(--ink2);font-variant-numeric:tabular-nums;margin-top:8px}
+.readout b{color:var(--ink);font-weight:600}
+
+/* maths */
+.m{font-family:"Cambria Math","STIX Two Math",Cambria,"Times New Roman",Georgia,serif;font-size:1.08em;white-space:nowrap}
+.m i{font-style:italic}
+.m sub,.m sup{font-size:.72em;line-height:0}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .14em;line-height:1.12}
+.frac .fn{padding:0 .28em .06em;border-bottom:1px solid currentColor}
+.frac .fd{padding:.08em .28em 0}
+.eq{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:9px 12px;margin:8px 0;background:var(--wash);border-radius:9px;overflow-x:auto;font-size:17px}
+.eq .tag{margin-left:auto;font-size:13px;color:var(--ink2);white-space:nowrap}
+
+/* notes and details */
+.note{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.note h3{margin-top:0}
+.note p:last-child{margin-bottom:0}
+details{margin:12px 0}
+summary{cursor:pointer;font-weight:600;font-size:14.5px;padding:4px 0}
+details .inner{padding:8px 0 0}
+
+/* tables */
+.tbl-wrap{overflow:auto;max-height:340px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+th{position:sticky;top:0;background:var(--surface);font-weight:600;color:var(--ink2);font-size:12.5px;z-index:1}
+td:first-child,th:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+tr.cur td{background:var(--s1-wash)}
+td.pend{color:var(--muted)}
+
+/* stepper */
+.tabs{margin:14px 0 6px}
+.carry{color:var(--ink2);max-width:76ch}
+ol.subs{list-style:none;padding:0;margin:10px 0;counter-reset:sub}
+ol.subs li{counter-increment:sub;border:1px solid var(--border);border-radius:11px;padding:11px 14px 11px 46px;margin:8px 0;position:relative;background:var(--surface)}
+ol.subs li::before{content:counter(sub);position:absolute;left:12px;top:11px;width:22px;height:22px;border-radius:50%;border:1px solid var(--axis);font-size:12.5px;font-weight:600;display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+ol.subs li.done::before{background:var(--ink2);border-color:var(--ink2);color:var(--surface)}
+ol.subs li.active{border-color:var(--s1);box-shadow:0 0 0 1px var(--s1)}
+ol.subs li.active::before{background:var(--s1);border-color:var(--s1);color:#fff}
+ol.subs li.pending{opacity:.55}
+.sub-t{font-weight:650}
+.sub-w{font-size:13.5px;color:var(--ink2);margin:2px 0 6px}
+.sub-m{font-size:16px;line-height:2.25;overflow-x:auto}
+.sub-m .m{white-space:normal}
+.sub-r{display:inline-block;margin-top:4px;padding:1px 10px;border-radius:7px;background:var(--s1-wash);font-weight:600}
+.startcard{border:1px solid var(--border);border-radius:11px;padding:11px 14px;margin:8px 0;background:var(--wash)}
+.stephead{font-weight:650;margin:16px 0 0;font-size:15.5px}
+.donebox{border-radius:11px;padding:10px 14px;margin:8px 0;background:var(--wash);font-size:14.5px}
+svg.stencil{width:100%;height:auto;display:block}
+.stencil text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink2);font-size:12px}
+.stencil .nd rect{fill:var(--surface);stroke:var(--axis);stroke-width:1}
+.stencil .nd text{fill:var(--muted);font-size:16.5px;font-family:"Cambria Math","STIX Two Math",Cambria,"Times New Roman",Georgia,serif}
+.stencil .nd.known rect{fill:var(--grid);stroke:var(--axis)}
+.stencil .nd.known text{fill:var(--ink)}
+.stencil .nd.in rect{fill:var(--s1-wash);stroke:var(--s1);stroke-width:2}
+.stencil .nd.in text{fill:var(--ink)}
+.stencil .nd.out rect{fill:var(--s1);stroke:var(--s1)}
+.stencil .nd.out text{fill:#fff}
+.stencil .axisline{stroke:var(--axis);stroke-width:1}
+.stencil .arrow{stroke:var(--s1);stroke-width:1.5;fill:none}
+.sw{display:inline-block;width:22px;height:13px;border-radius:4px;vertical-align:-2px;margin-right:7px;border:1px solid var(--axis);background:var(--surface)}
+.sw.known{background:var(--grid)} .sw.in{background:var(--s1-wash);border:2px solid var(--s1)} .sw.out{background:var(--s1);border-color:var(--s1)}
+
+/* tooltip */
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.14);max-width:260px}
+.tip-t{color:var(--ink2);font-size:12px;margin-bottom:4px}
+.tip-r{display:flex;align-items:center;gap:8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tip-k{width:14px;height:3px;border-radius:2px;flex:none}
+.tip-k.dot{width:8px;height:8px;border-radius:50%;margin:0 3px}
+.tip-n{color:var(--ink2)}
+
+footer{margin-top:60px;padding:22px 0 60px;border-top:1px solid var(--border);color:var(--ink2);font-size:13.5px}
+body[data-sys="spring"] .only-pend{display:none}
+body[data-sys="pendulum"] .only-spring{display:none}
+</style>
+</head>
+<body data-sys="spring">
+<header class="hero"><div class="wrap">
+  <div class="kicker">Lecture 11 · Molecular dynamics</div>
+  <h1>What makes an integrator “good”?</h1>
+  <p class="lede">An integrator is the recipe that moves the atoms forward by one small time step. Test the three properties a good one must have, then work through the three Verlet algorithms one line of arithmetic at a time.</p>
+</div></header>
+
+<div class="bar"><div class="wrap">
+  <div class="ctl"><span class="ctl-l">System</span>
+    <div class="seg" role="group" aria-label="System" id="sysSeg">
+      <button type="button" data-sys="spring" aria-pressed="true">Mass on a spring</button>
+      <button type="button" data-sys="pendulum" aria-pressed="false">Pendulum</button>
+    </div>
+  </div>
+  <div class="ctl"><label class="ctl-l" for="dt">Time step Δt</label>
+    <input id="dt" type="range" min="0.01" max="1" step="0.01" value="0.1">
+    <output id="dtv" for="dt">0.10</output>
+  </div>
+  <nav aria-label="Sections">
+    <a href="#s0">Setup</a><a href="#s1">1 Reversible</a><a href="#s2">2 Area</a><a href="#s3">3 Energy</a><a href="#s4">4 Algorithms</a>
+  </nav>
+</div></div>
+
+<main>
+
+<!-- ================= 0 ================= -->
+<section id="s0"><div class="wrap">
+  <h2><span class="num">0</span>The test system, and a map of its states</h2>
+  <p class="lead">Everything on this page uses one particle moving along a line, so every number can be checked by hand. The same ideas hold for <span class="m" data-m="N"></span> atoms in three dimensions.</p>
+  <div class="split">
+    <div>
+      <dl class="defs">
+        <dt><span class="m" data-m="x"></span></dt>
+        <dd>Position. <span class="only-spring">How far the mass is from its rest point.</span><span class="only-pend">The angle of the pendulum from straight down, in radians.</span></dd>
+        <dt><span class="m" data-m="v"></span></dt>
+        <dd>Velocity: how fast <span class="m" data-m="x"></span> is changing.</dd>
+        <dt><span class="m" data-m="m"></span></dt>
+        <dd>Mass, set to 1.</dd>
+        <dt><span class="m" data-m="f"></span></dt>
+        <dd>Force on the particle.
+          <span class="only-spring"><span class="m" data-m="f = −kx"></span> with stiffness <span class="m" data-m="k = 1"></span>: the spring always pulls back towards <span class="m" data-m="x = 0"></span>.</span>
+          <span class="only-pend"><span class="m" data-m="f = −sin x"></span>: gravity pulling the bob back towards <span class="m" data-m="x = 0"></span>.</span></dd>
+        <dt><span class="m" data-m="t"></span></dt>
+        <dd>Time.</dd>
+        <dt><span class="m" data-m="Δt"></span></dt>
+        <dd>The time step: how far the clock moves each time the algorithm updates the particle. Set it in the bar above.</dd>
+        <dt><span class="m" data-m="E"></span></dt>
+        <dd>Total energy, kinetic plus potential: <span class="m" data-m="E = ½mv^2 + U(x)"></span>, where the potential energy is
+          <span class="only-spring"><span class="m" data-m="U = ½kx^2"></span>.</span><span class="only-pend"><span class="m" data-m="U = 1 − cos x"></span>.</span></dd>
+      </dl>
+      <p>The particle always starts at <span class="m" data-m="x = 1, v = 0"></span>: pulled aside and released.</p>
+      <h3>The map: phase space</h3>
+      <p>Plot position <span class="m" data-m="x"></span> across and velocity <span class="m" data-m="v"></span> up. One dot on this map is the complete state of the particle: where it is and how fast it is moving. As time passes the dot moves.</p>
+      <p>Under the exact laws of motion the dot goes round one closed loop for ever. Each grey loop is a line of constant energy, bigger loops mean more energy, and the true motion never changes the energy.</p>
+      <p>A real system of <span class="m" data-m="N"></span> atoms has <span class="m" data-m="3N"></span> positions and <span class="m" data-m="3N"></span> velocities, so its map has <span class="m" data-m="6N"></span> axes instead of two. The picture is the same: one dot, moving on a surface of constant energy.</p>
+    </div>
+    <div class="card">
+      <div class="ptitle"><span class="key k0"></span>Exact motion</div>
+      <canvas id="toon" class="cv-toon" role="img" aria-label="Animation of the particle"></canvas>
+      <canvas id="s0phase" class="cv-sq" role="img" aria-label="Phase-space map with the exact motion"></canvas>
+      <div class="readout" id="s0read"></div>
+      <div class="controls" style="margin-bottom:0"><button type="button" class="btn primary" id="s0play">Play</button><button type="button" class="btn" id="s0reset">Reset</button></div>
+    </div>
+  </div>
+
+  <h3>The algorithms being compared in sections 1 to 3</h3>
+  <ul class="cast">
+    <li><span class="key k1"></span><b>Velocity-Verlet.</b> The standard MD integrator. Its arithmetic is laid out in section 4.</li>
+    <li><span class="key k2"></span><b>Euler.</b> The simplest recipe there is. New position <span class="m" data-m="= x + vΔt"></span>, new velocity <span class="m" data-m="= v + (f/m)Δt"></span>, both worked out from the old values.</li>
+    <li><span class="key k3"></span><b>RK4</b> (Runge–Kutta, fourth order). A standard high-accuracy method from numerical analysis. It samples the force four times inside each step and is far more accurate per step than the other two. It is here to show that accuracy alone is not what MD needs.</li>
+    <li><span class="key k0"></span><b>Exact.</b> The true motion, for reference.</li>
+  </ul>
+</div></section>
+
+<!-- ================= 1 ================= -->
+<section id="s1"><div class="wrap">
+  <h2><span class="num">1</span>Time-reversible</h2>
+  <p class="lead">Film the true motion and play the film backwards: the reversed film also obeys Newton’s law. The test for an algorithm is the same. Run forward, flip the sign of the velocity, then run the same number of steps again. A time-reversible algorithm arrives back exactly where it started.</p>
+  <p class="look"><b>What to look for.</b> The line is the forward run. The dots are the return trip, drawn against the film running backwards. If the algorithm is time-reversible, the dots sit on the line all the way back to the start. The number under each chart is how far the final state ends up from the starting state on the map of section 0 (zero means a perfect return).</p>
+  <div class="controls">
+    <div class="ctl"><label class="ctl-l" for="revN">Steps forward</label><input id="revN" type="range" min="10" max="300" step="10" value="100"><output id="revNv" for="revN">100</output></div>
+    <button type="button" class="btn primary" id="revPlay">Replay</button>
+    <span class="status" id="revStatus"></span>
+  </div>
+  <div class="legend"><span><span class="key"></span>forward run</span><span><span class="key dot"></span>return trip, velocity flipped</span></div>
+  <div class="grid3">
+    <div class="card"><div class="ptitle"><span class="key k2"></span>Euler</div>
+      <canvas id="rev-euler" class="cv-line" tabindex="0" role="img" aria-label="Euler: position against film time, forward and return"></canvas>
+      <div class="stat"><div class="stat-l">Distance from the start after the round trip</div><div class="stat-v" id="rev-euler-v"></div><div class="stat-n" id="rev-euler-n"></div></div></div>
+    <div class="card"><div class="ptitle"><span class="key k3"></span>RK4</div>
+      <canvas id="rev-rk4" class="cv-line" tabindex="0" role="img" aria-label="RK4: position against film time, forward and return"></canvas>
+      <div class="stat"><div class="stat-l">Distance from the start after the round trip</div><div class="stat-v" id="rev-rk4-v"></div><div class="stat-n" id="rev-rk4-n"></div></div></div>
+    <div class="card"><div class="ptitle"><span class="key k1"></span>Velocity-Verlet</div>
+      <canvas id="rev-vv" class="cv-line" tabindex="0" role="img" aria-label="Velocity-Verlet: position against film time, forward and return"></canvas>
+      <div class="stat"><div class="stat-l">Distance from the start after the round trip</div><div class="stat-v" id="rev-vv-v"></div><div class="stat-n" id="rev-vv-n"></div></div></div>
+  </div>
+  <div class="note">
+    <h3>Why Euler misses and velocity-Verlet does not</h3>
+    <p id="revWhy"></p>
+    <p>Velocity-Verlet uses the force at both ends of the step, in a symmetric way. The step looks the same from either end, so running it backwards undoes it exactly.</p>
+    <details><summary>Show the algebra for velocity-Verlet</summary><div class="inner">
+      <p>Forward step from <span class="m" data-m="(x, v)"></span>. Write <span class="m" data-m="f"></span> for the force at <span class="m" data-m="x"></span>, and <span class="m" data-m="f′"></span> for the force at the new position <span class="m" data-m="x′"></span>:</p>
+      <div class="eq"><span class="m" data-m="x′ = x + vΔt + {f|2m}Δt^2"></span></div>
+      <div class="eq"><span class="m" data-m="v′ = v + {f + f′|2m}Δt"></span></div>
+      <p>Now start from <span class="m" data-m="(x′, −v′)"></span> and apply the same two formulas. The force at the start is now <span class="m" data-m="f′"></span>:</p>
+      <div class="eq"><span class="m" data-m="x″ = x′ − v′Δt + {f′|2m}Δt^2 = x + vΔt + {f|2m}Δt^2 − vΔt − {f + f′|2m}Δt^2 + {f′|2m}Δt^2 = x"></span></div>
+      <div class="eq"><span class="m" data-m="v″ = −v′ + {f′ + f|2m}Δt = −v − {f + f′|2m}Δt + {f′ + f|2m}Δt = −v"></span></div>
+      <p>Every extra term cancels. You are back at <span class="m" data-m="x"></span> with the velocity reversed, exactly, whatever the force law and whatever the size of <span class="m" data-m="Δt"></span>.</p>
+    </div></details>
+  </div>
+</div></section>
+
+<!-- ================= 2 ================= -->
+<section id="s2"><div class="wrap">
+  <h2><span class="num">2</span>Area-preserving</h2>
+  <p class="lead">Start not one particle but a whole patch of slightly different starting states on the map. The exact motion can stretch and bend the patch, but it never changes its area. (For <span class="m" data-m="N"></span> atoms the map has <span class="m" data-m="6N"></span> axes and “area” becomes “volume”; the statement is the same.) A good algorithm has to keep the area fixed too. A patch that keeps growing is the mark of an algorithm that pumps energy into the system. A patch that keeps shrinking is the mark of one that drains energy out.</p>
+  <p class="look"><b>What to look for.</b> The coloured patch is where the algorithm puts the cloud of states. The dark outline is where the exact motion puts the same cloud. The number under each panel is the patch area divided by its starting area.</p>
+  <div class="controls">
+    <button type="button" class="btn primary" id="arPlay">Play</button>
+    <button type="button" class="btn" id="arStep">Step once</button>
+    <button type="button" class="btn" id="arReset">Reset</button>
+    <div class="ctl"><span class="ctl-l">Speed</span><div class="seg" role="group" aria-label="Speed" id="arSpeed"><button type="button" data-sp="0.4" aria-pressed="false">Slow</button><button type="button" data-sp="1" aria-pressed="true">Normal</button><button type="button" data-sp="4" aria-pressed="false">Fast</button></div></div>
+    <span class="status" id="arStatus"></span>
+  </div>
+  <div class="legend"><span><span class="key fill" style="background:var(--ink2)"></span>the algorithm’s patch</span><span><span class="key k0"></span>the exact motion’s patch</span><span><span class="key ring"></span>starting patch</span><span><span class="key" style="height:2px;opacity:.6"></span>path of the patch centre</span></div>
+  <div class="grid3">
+    <div class="card"><div class="ptitle"><span class="key k2"></span>Euler</div>
+      <canvas id="ar-euler" class="cv-sq" role="img" aria-label="Euler: patch of states on the phase-space map"></canvas>
+      <div class="stat"><div class="stat-l">Area ÷ starting area</div><div class="stat-v" id="ar-euler-v"></div><div class="stat-n" id="ar-euler-n"></div></div></div>
+    <div class="card"><div class="ptitle"><span class="key k3"></span>RK4</div>
+      <canvas id="ar-rk4" class="cv-sq" role="img" aria-label="RK4: patch of states on the phase-space map"></canvas>
+      <div class="stat"><div class="stat-l">Area ÷ starting area</div><div class="stat-v" id="ar-rk4-v"></div><div class="stat-n" id="ar-rk4-n"></div></div></div>
+    <div class="card"><div class="ptitle"><span class="key k1"></span>Velocity-Verlet</div>
+      <canvas id="ar-vv" class="cv-sq" role="img" aria-label="Velocity-Verlet: patch of states on the phase-space map"></canvas>
+      <div class="stat"><div class="stat-l">Area ÷ starting area</div><div class="stat-v" id="ar-vv-v"></div><div class="stat-n" id="ar-vv-n"></div></div></div>
+  </div>
+  <p class="body" style="margin-top:14px"><b>Two things to try.</b> Switch the system to Pendulum: a pendulum swings more slowly at large angles, so the exact motion shears the patch into a streak, and the velocity-Verlet area still does not change. Then raise <span class="m" data-m="Δt"></span> towards 1: Euler explodes at once, the RK4 patch visibly shrinks, and the velocity-Verlet patch gets out of step with the exact outline (a timing error) but keeps its area.</p>
+
+  <div class="note">
+    <h3>Why velocity-Verlet keeps the area: three slides of a deck of cards</h3>
+    <p>One velocity-Verlet step is three simple moves, one after another. Write <span class="m" data-m="x′"></span> and <span class="m" data-m="v′"></span> for the position and velocity at the end of the step, and <span class="m" data-m="v_{½}"></span> for the velocity in between, after the first move.</p>
+    <div class="eq"><span class="m" data-m="v_{½} = v + {f(x)|2m}Δt"></span><span class="tag">half kick</span></div>
+    <div class="eq"><span class="m" data-m="x′ = x + v_{½}Δt"></span><span class="tag">drift</span></div>
+    <div class="eq"><span class="m" data-m="v′ = v_{½} + {f(x′)|2m}Δt"></span><span class="tag">half kick, with the force at the new position</span></div>
+    <p>Substitute the first line into the other two and you get exactly equations (1) and (2) of section 4. It is the same algorithm, written in a different order.</p>
+    <p>Each move changes only one of the two coordinates, by an amount that depends only on the other one. On the map that is a slide. In a kick, every vertical column of states moves up or down as one piece. In a drift, every horizontal row moves sideways as one piece. Slide the cards of a deck and its side changes shape but not area. Three slides in a row still leave the area unchanged, for any <span class="m" data-m="Δt"></span> and any force.</p>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Stage of the step" id="shSeg">
+        <button type="button" data-p="0" aria-pressed="true">Start</button>
+        <button type="button" data-p="1" aria-pressed="false">1 · half kick</button>
+        <button type="button" data-p="2" aria-pressed="false">2 · drift</button>
+        <button type="button" data-p="3" aria-pressed="false">3 · half kick</button>
+      </div>
+      <button type="button" class="btn primary" id="shPlay">Play the whole step</button>
+      <span class="status">One step with <span class="m" data-m="Δt = 0.8"></span>, exaggerated so the slides are easy to see.</span>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="ptitle"><span class="key k1"></span>Velocity-Verlet: three slides</div>
+        <canvas id="sh-vv" class="cv-sq" role="img" aria-label="A square patch of states under one velocity-Verlet step"></canvas>
+        <div class="stat"><div class="stat-l">Area ÷ starting area</div><div class="stat-v" id="sh-vv-v"></div><div class="stat-n" id="sh-vv-n"></div></div></div>
+      <div class="card"><div class="ptitle"><span class="key k2"></span>Euler: one move</div>
+        <canvas id="sh-euler" class="cv-sq" role="img" aria-label="A square patch of states under one Euler step"></canvas>
+        <div class="stat"><div class="stat-l">Area ÷ starting area</div><div class="stat-v" id="sh-euler-v"></div><div class="stat-n" id="sh-euler-n"></div></div></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ================= 3 ================= -->
+<section id="s3"><div class="wrap">
+  <h2><span class="num">3</span>No long-term energy drift</h2>
+  <p class="lead">The exact motion keeps the total energy <span class="m" data-m="E"></span> constant. No algorithm with a finite time step can do that perfectly. What matters is the kind of error. A small wobble around the right value is harmless. A steady creep is fatal for MD, because a long run then ends up at the wrong energy, which means the wrong temperature.</p>
+  <p class="look"><b>What to look for.</b> Each algorithm runs for 100 time units from the same start. The charts show its energy divided by the starting energy, so the exact answer is a flat line at 1.</p>
+  <div class="legend"><span><span class="key k2"></span>Euler</span><span><span class="key k3"></span>RK4</span><span><span class="key k1"></span>Velocity-Verlet</span><span><span class="key k0"></span>exact</span></div>
+  <div class="split wide-right">
+    <div class="card">
+      <div class="chart-h">Path on the map</div>
+      <p class="chart-s">Energy says which loop the dot is on. The round marker is the start.</p>
+      <canvas id="en-phase" class="cv-sq" role="img" aria-label="Paths of the three algorithms on the phase-space map"></canvas>
+    </div>
+    <div class="card">
+      <div class="chart-h">Energy ÷ starting energy, all three</div>
+      <p class="chart-s">Each gridline is 10 times the one below it.</p>
+      <canvas id="en-all" class="cv-wide" tabindex="0" role="img" aria-label="Energy ratio over time for Euler, RK4 and velocity-Verlet, logarithmic scale"></canvas>
+      <div class="chart-h" style="margin-top:14px">Zoom on velocity-Verlet and RK4</div>
+      <p class="chart-s">Same quantity on an ordinary scale.</p>
+      <canvas id="en-zoom" class="cv-wide" tabindex="0" role="img" aria-label="Energy ratio over time for velocity-Verlet and RK4, zoomed in"></canvas>
+    </div>
+  </div>
+  <div class="grid3" style="margin-top:14px">
+    <div class="card"><div class="ptitle"><span class="key k2"></span>Euler</div><div class="stat-l">Energy after 100 time units</div><div class="stat-v" id="en-euler-v"></div><div class="stat-n" id="en-euler-n"></div></div>
+    <div class="card"><div class="ptitle"><span class="key k3"></span>RK4</div><div class="stat-l">Energy after 100 time units</div><div class="stat-v" id="en-rk4-v"></div><div class="stat-n" id="en-rk4-n"></div></div>
+    <div class="card"><div class="ptitle"><span class="key k1"></span>Velocity-Verlet</div><div class="stat-l">Energy range over the whole run</div><div class="stat-v" id="en-vv-v"></div><div class="stat-n" id="en-vv-n"></div></div>
+  </div>
+  <details><summary>Show the numbers as a table</summary><div class="inner"><div class="tbl-wrap"><table id="enTable"></table></div></div></details>
+  <div class="note">
+    <h3>How the three properties fit together</h3>
+    <p>Properties 1 and 2 are the cause; property 3 is the effect. Because velocity-Verlet is time-reversible and area-preserving, its dot cannot spiral in or out. It stays on a closed loop that is a slightly distorted copy of the true one, so its energy can only wobble.</p>
+    <p class="only-spring" id="shadow"></p>
+    <p>RK4 is far more accurate per step, but it has neither property. Its small error always points the same way, so it adds up. In a real many-atom system tiny errors grow so fast that no algorithm can follow the exact path of each atom for long. What a simulation needs is to stay on the right energy surface over millions of steps. RK4 also needs four force calculations per step, and forces are the expensive part.</p>
+  </div>
+</div></section>
+
+<!-- ================= 4 ================= -->
+<section id="s4"><div class="wrap">
+  <h2><span class="num">4</span>The three Verlet algorithms, one line at a time</h2>
+  <p class="lead">The three algorithms in the lecture give exactly the same positions. They differ only in which numbers they carry from one step to the next. Pick one and press Next to do its arithmetic one line at a time.</p>
+  <p class="body">The notes write <span class="m" data-m="r"></span> for position; here it is <span class="m" data-m="x"></span>. A subscript counts steps: <span class="m" data-m="x_3"></span> is the position after 3 steps, at time <span class="m" data-m="t = 3Δt"></span>. The system and <span class="m" data-m="Δt"></span> come from the bar at the top.</p>
+  <div class="seg tabs" role="tablist" aria-label="Algorithm" id="stTabs">
+    <button type="button" role="tab" data-alg="vv" aria-selected="true">Velocity-Verlet</button>
+    <button type="button" role="tab" data-alg="verlet" aria-selected="false">Verlet</button>
+    <button type="button" role="tab" data-alg="lf" aria-selected="false">Leap-frog</button>
+    <button type="button" role="tab" data-alg="cmp" aria-selected="false">All three side by side</button>
+  </div>
+
+  <div id="stPane">
+    <p class="carry" id="stCarry"></p>
+    <div id="stEqs"></div>
+    <div class="controls">
+      <button type="button" class="btn" id="stBack">Back</button>
+      <button type="button" class="btn primary" id="stNext">Next line</button>
+      <button type="button" class="btn" id="stFinish">Finish this step</button>
+      <button type="button" class="btn" id="stTen">Run 10 steps</button>
+      <button type="button" class="btn" id="stReset">Reset</button>
+    </div>
+    <div class="split">
+      <div>
+        <div class="startcard" id="stStart"></div>
+        <div class="stephead" id="stHead"></div>
+        <ol class="subs" id="stSubs"></ol>
+        <div class="donebox" id="stDone"></div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="chart-h">Which numbers feed which</div>
+          <p class="chart-s" id="stStencilCap"></p>
+          <div id="stStencil"></div>
+          <div class="legend" style="margin-bottom:0"><span><span class="sw in"></span>used on this line</span><span><span class="sw out"></span>computed on this line</span><span><span class="sw known"></span>already known</span><span><span class="sw"></span>not yet known</span></div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="legend" style="margin-top:0"><span><span class="key k0"></span>exact motion</span><span><span class="key dot k1"></span>computed by the algorithm</span></div>
+          <div class="chart-h">Position <span class="m" data-m="x"></span></div>
+          <canvas id="st-x" class="cv-wide" tabindex="0" role="img" aria-label="Computed positions against time, with the exact curve"></canvas>
+          <div class="chart-h" style="margin-top:10px">Velocity <span class="m" data-m="v"></span></div>
+          <canvas id="st-v" class="cv-wide" tabindex="0" role="img" aria-label="Computed velocities against time, with the exact curve"></canvas>
+        </div>
+      </div>
+    </div>
+    <h3>Every number so far</h3>
+    <div class="tbl-wrap" id="stTblWrap"><table id="stTable"></table></div>
+  </div>
+
+  <div id="cmpPane" hidden>
+    <p class="body">Each algorithm below is run with its own formulas from the same start. The positions agree to the last digit the computer stores. That is not a coincidence or an approximation: the derivations in the notes show the three are the same recipe rearranged.</p>
+    <div class="tbl-wrap" style="max-height:none"><table id="cmpTable"></table></div>
+    <p class="body" id="cmpNote" style="margin-top:12px"></p>
+    <h3>What each one carries, and what that costs</h3>
+    <ul class="cast">
+      <li><span class="key k1"></span><b>Velocity-Verlet.</b> Position and velocity at the same instant. Kinetic and potential energy are available together at every step. This is the LAMMPS default.</li>
+      <li><span class="key k1"></span><b>Verlet.</b> Two positions and no velocity. The velocity is only available one step late, and the first step needs an extra starting position.</li>
+      <li><span class="key k1"></span><b>Leap-frog.</b> Position, and a velocity half a step away from it. Kinetic and potential energy are never known at the same instant without the extra averaging line. This is the GROMACS default.</li>
+    </ul>
+  </div>
+</div></section>
+
+</main>
+
+<footer><div class="wrap">All numbers are computed live in your browser, with mass <span class="m" data-m="m = 1"></span> (and stiffness <span class="m" data-m="k = 1"></span> for the spring). The file is self-contained and works offline.</div></footer>
+
+<div id="tip" class="tip" hidden></div>
+<noscript><div class="wrap"><p>This page needs JavaScript switched on to run the simulations.</p></div></noscript>
+<script>
+(function(){
+'use strict';
+/* ------------------------------------------------------------------
+   Core: system, integrators, formatting, canvas helpers, charts
+------------------------------------------------------------------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+
+const X0 = 1, V0 = 0, MIN = '−';
+const SYS = {
+  spring:   { f: x => -x,           U: x => 0.5 * x * x },
+  pendulum: { f: x => -Math.sin(x), U: x => 1 - Math.cos(x) }
+};
+const G = { sys: 'spring', dt: 0.1 };
+let F = SYS.spring.f, U = SYS.spring.U;
+const energy = (x, v) => 0.5 * v * v + U(x);
+
+/* Each step function writes its result into OX, OV (no allocation in hot loops). */
+let OX = 0, OV = 0;
+function stepVV(x, v, dt) { const f0 = F(x); OX = x + v * dt + 0.5 * f0 * dt * dt; OV = v + 0.5 * (f0 + F(OX)) * dt; }
+function stepEuler(x, v, dt) { OX = x + v * dt; OV = v + F(x) * dt; }
+function stepRK4(x, v, dt) {
+  const k1x = v, k1v = F(x);
+  const k2x = v + 0.5 * dt * k1v, k2v = F(x + 0.5 * dt * k1x);
+  const k3x = v + 0.5 * dt * k2v, k3v = F(x + 0.5 * dt * k2x);
+  const k4x = v + dt * k3v, k4v = F(x + dt * k3x);
+  OX = x + dt * (k1x + 2 * k2x + 2 * k3x + k4x) / 6;
+  OV = v + dt * (k1v + 2 * k2v + 2 * k3v + k4v) / 6;
+}
+/* Exact motion: closed form for the spring, very fine RK4 sub-steps for the pendulum. */
+function stepExact(x, v, dt) {
+  if (G.sys === 'spring') { const c = Math.cos(dt), s = Math.sin(dt); OX = x * c + v * s; OV = -x * s + v * c; return; }
+  const n = Math.max(1, Math.ceil(dt / 0.02)), h = dt / n;
+  for (let i = 0; i < n; i++) { stepRK4(x, v, h); x = OX; v = OV; }
+}
+const INT = {
+  euler: { name: 'Euler', col: 's2', step: stepEuler },
+  rk4:   { name: 'RK4', col: 's3', step: stepRK4 },
+  vv:    { name: 'Velocity-Verlet', col: 's1', step: stepVV }
+};
+const ORDER = ['euler', 'rk4', 'vv'];
+
+/* Exact state at time t from the common start (used for reference curves). */
+let refTab = null;
+function refAt(t) {
+  if (G.sys === 'spring') return [X0 * Math.cos(t) + V0 * Math.sin(t), -X0 * Math.sin(t) + V0 * Math.cos(t)];
+  const sgn = t < 0 ? -1 : 1; t = Math.abs(t);           // start is a turning point (v = 0), so the motion is symmetric in time
+  const h = 0.01;
+  if (!refTab || refTab.tmax < t + h) {
+    const tmax = Math.max(60, t * 1.5), n = Math.ceil(tmax / h);
+    const xs = new Float64Array(n + 2), vs = new Float64Array(n + 2);
+    let x = X0, v = V0; xs[0] = x; vs[0] = v;
+    for (let i = 1; i <= n + 1; i++) { stepRK4(x, v, h); x = OX; v = OV; xs[i] = x; vs[i] = v; }
+    refTab = { tmax: n * h, xs, vs };
+  }
+  const u = t / h, i = Math.min(Math.floor(u + 1e-9), refTab.xs.length - 2), fr = u - i;
+  return [refTab.xs[i] + (refTab.xs[i + 1] - refTab.xs[i]) * fr, sgn * (refTab.vs[i] + (refTab.vs[i + 1] - refTab.vs[i]) * fr)];
+}
+
+/* ---------- number formatting ---------- */
+function fx(v, d) {
+  d = d == null ? 6 : d; if (!isFinite(v)) return '∞';
+  const p = Math.pow(10, d); let a = Math.abs(v);
+  if (a * p < 1e15) a = Math.round(a * p * (1 + 1e-12)) / p;      // round half up, immune to the last binary digit
+  let s = a.toFixed(d); if (v < 0 && parseFloat(s) !== 0) s = MIN + s; return s;
+}
+function par(v, d) { const s = fx(v, d); return s[0] === MIN ? '(' + s + ')' : s; }
+const SUPS = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
+const sup = n => String(n).split('').map(c => SUPS[c] || c).join('');
+function sci(v, sig) {
+  sig = sig || 2; if (v === 0) return '0';
+  const a = Math.abs(v); let e = Math.floor(Math.log10(a)); let ms = (a / Math.pow(10, e)).toFixed(sig - 1);
+  if (parseFloat(ms) >= 10) { e++; ms = (a / Math.pow(10, e)).toFixed(sig - 1); }
+  return (v < 0 ? MIN : '') + ms + ' × 10' + sup(e);
+}
+const commas = v => Math.round(v).toLocaleString('en-US');
+const dts = () => String(+G.dt.toFixed(2));
+function fmtRatio(r) {
+  if (!isFinite(r)) return 'beyond 10' + sup(300);
+  if (r >= 1e7) return sci(r, 2);
+  if (r >= 1000) return commas(r);
+  if (r >= 10) return r.toFixed(1);
+  if (Math.abs(r - 1) < 1e-3) return r.toFixed(6);
+  if (r < 0.001) return sci(r, 2);
+  return r.toFixed(4);
+}
+
+/* ---------- tiny maths typesetter ----------
+   {a|b} fraction, _x or _{..} subscript, ^x or ^{..} superscript, letters italic. */
+const UPRIGHT = new Set(['sin', 'cos']);
+function M(s) {
+  let i = 0;
+  const esc = c => c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : c;
+  function plain(t) {
+    let o = '', j = 0;
+    while (j < t.length) {
+      if (/[A-Za-z]/.test(t[j])) { let k = j; while (k < t.length && /[A-Za-z]/.test(t[k])) k++; const w = t.slice(j, k); o += UPRIGHT.has(w) ? w : '<i>' + w + '</i>'; j = k; }
+      else { o += esc(t[j]); j++; }
+    }
+    return o;
+  }
+  function parse(stop) {
+    let o = '';
+    while (i < s.length) {
+      const c = s[i];
+      if (stop.indexOf(c) >= 0) break;
+      if (c === '{') {
+        i++; const a = parse('|}');
+        if (s[i] === '|') { i++; const b = parse('}'); i++; o += '<span class="frac"><span class="fn">' + a + '</span><span class="fd">' + b + '</span></span>'; }
+        else { i++; o += a; }
+      } else if (c === '_' || c === '^') {
+        i++; let inner;
+        if (s[i] === '{') { i++; inner = parse('}'); i++; } else { inner = plain(s[i]); i++; }
+        o += (c === '_' ? '<sub>' : '<sup>') + inner + (c === '_' ? '</sub>' : '</sup>');
+      } else {
+        let j = i; while (j < s.length && '{}|_^'.indexOf(s[j]) < 0) j++;
+        if (j === i) j = i + 1;
+        o += plain(s.slice(i, j)); i = j;
+      }
+    }
+    return o;
+  }
+  return parse('');
+}
+const mspan = s => '<span class="m">' + M(s) + '</span>';
+
+/* ---------- colours (read from CSS so light/dark swap in one place) ---------- */
+const C = {};
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ['page', 'surface', 'ink', 'ink2', 'muted', 'grid', 'axis', 's1', 's2', 's3']) C[k] = cs.getPropertyValue('--' + k).trim();
+}
+function rgba(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; }
+const FONT = '11.5px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+
+/* ---------- canvas helpers ---------- */
+function prep(cv) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+function ticks(a, b, n) {
+  const raw = (b - a) / Math.max(1, n), p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p;
+  const step = (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p, out = [];
+  for (let t = Math.ceil(a / step - 1e-9) * step; t <= b + step * 1e-9; t += step) out.push(Math.abs(t) < step * 1e-9 ? 0 : t);
+  return { out, step };
+}
+function fmtTick(t, step) {
+  const d = Math.max(0, Math.min(8, Math.ceil(-Math.log10(step) - 1e-9)));
+  return fx(t, d);
+}
+function dot(ctx, x, y, r, col, hollow) {
+  ctx.beginPath(); ctx.arc(x, y, r + 2, 0, 6.2832); ctx.fillStyle = C.surface; ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, hollow ? r - 0.75 : r, 0, 6.2832);
+  if (hollow) { ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke(); } else { ctx.fillStyle = col; ctx.fill(); }
+}
+
+/* Curves of constant energy on the phase-space map. */
+function contour(ctx, X, Y, E, xa, xb) {
+  const n = 180, segs = []; let seg = [], pv = null, px = 0;
+  for (let i = 0; i <= n; i++) {
+    const x = xa + (xb - xa) * i / n, val = 2 * (E - U(x));
+    if (val >= 0) { if (pv !== null && pv < 0) seg.push([px + (x - px) * (-pv) / (val - pv), 0]); seg.push([x, Math.sqrt(val)]); }
+    else if (pv !== null && pv >= 0) { seg.push([px + (x - px) * pv / (pv - val), 0]); segs.push(seg); seg = []; }
+    pv = val; px = x;
+  }
+  if (seg.length) segs.push(seg);
+  for (const s of segs) for (const sg of [1, -1]) {
+    ctx.beginPath();
+    for (let i = 0; i < s.length; i++) { const a = X(s[i][0]), b = Y(sg * s[i][1]); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }
+    ctx.stroke();
+  }
+}
+/* Square phase-space frame: x across, v up, equal scales. Returns the mapping. */
+function phaseFrame(ctx, w, h, R, o) {
+  o = o || {};
+  const ml = 52, mr = 8, mt = 8, mb = 34;
+  const size = Math.max(40, Math.min(w - ml - mr, h - mt - mb));
+  const ox = ml + (w - ml - mr - size) / 2, oy = mt, cx = o.cx || 0, cy = o.cy || 0;
+  const X = x => ox + (x - cx + R) / (2 * R) * size, Y = v => oy + (R - (v - cy)) / (2 * R) * size;
+  ctx.font = FONT; ctx.lineWidth = 1;
+  ctx.save(); ctx.beginPath(); ctx.rect(ox, oy, size, size); ctx.clip();
+  if (o.contours !== false) {
+    ctx.strokeStyle = C.grid;
+    const amps = [0.5, 1, 1.5, 2, 2.5, 3];
+    for (const A of amps) contour(ctx, X, Y, U(A), cx - R, cx + R);
+    if (G.sys === 'pendulum') for (const E of [2.5, 3.4, 4.6, 6.2]) contour(ctx, X, Y, E, cx - R, cx + R);
+    else for (const A of [3.5, 4]) contour(ctx, X, Y, U(A), cx - R, cx + R);
+  }
+  ctx.strokeStyle = C.axis;
+  if (cy - R < 0 && cy + R > 0) { const y = Math.round(Y(0)) + 0.5; ctx.beginPath(); ctx.moveTo(ox, y); ctx.lineTo(ox + size, y); ctx.stroke(); }
+  if (cx - R < 0 && cx + R > 0) { const x = Math.round(X(0)) + 0.5; ctx.beginPath(); ctx.moveTo(x, oy); ctx.lineTo(x, oy + size); ctx.stroke(); }
+  ctx.restore();
+  ctx.strokeStyle = C.grid; ctx.strokeRect(Math.round(ox) + 0.5, Math.round(oy) + 0.5, Math.round(size), Math.round(size));
+  ctx.fillStyle = C.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const tstep = R > 2 ? 1 : 0.5;
+  for (let t = Math.ceil((cx - R) / tstep + 1e-9) * tstep; t < cx + R - 1e-9; t += tstep) ctx.fillText(fx(t, tstep < 1 ? 1 : 0), X(t), oy + size + 5);
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let t = Math.ceil((cy - R) / tstep + 1e-9) * tstep; t < cy + R - 1e-9; t += tstep) ctx.fillText(fx(t, tstep < 1 ? 1 : 0), ox - 6, Y(t));
+  ctx.fillStyle = C.ink2; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('position x', ox + size / 2, oy + size + 33);
+  ctx.save(); ctx.translate(Math.max(9, ox - 42), oy + size / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'middle'; ctx.fillText('velocity v', 0, 0); ctx.restore();
+  return { X, Y, ox, oy, size };
+}
+function clipFrame(ctx, Fm) { ctx.save(); ctx.beginPath(); ctx.rect(Fm.ox, Fm.oy, Fm.size, Fm.size); ctx.clip(); }
+const clampPx = p => p < -5000 ? -5000 : p > 5000 ? 5000 : p;
+
+/* ---------- tooltip ---------- */
+const tip = $('#tip');
+function showTip(cx, cy, title, rows) {
+  tip.replaceChildren(el('div', 'tip-t', title));
+  for (const r of rows) {
+    const d = el('div', 'tip-r'), k = el('span', 'tip-k' + (r.dot ? ' dot' : '')); k.style.background = r.color;
+    d.append(k, el('b', null, r.value), el('span', 'tip-n', r.name)); tip.appendChild(d);
+  }
+  tip.hidden = false;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = cx + 14, y = cy + 14;
+  if (x + tw > innerWidth - 8) x = cx - tw - 14;
+  if (y + th > innerHeight - 8) y = cy - th - 14;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+function hideTip() { tip.hidden = true; }
+
+/* ---------- line chart with crosshair + tooltip ----------
+   data: {xmin,xmax,ymin,ymax,logY,xLabel,yLabel,yFmt,tipTitle,
+          series:[{name,col,mode:'line'|'dots',xs,ys,n,w,r,hollow,fmt,head}], refs:[{y,col}]} */
+function LineChart(cv) {
+  const me = { cv, d: null, hov: null, g: null };
+  const nearest = (s, xv) => { const n = s.n == null ? s.xs.length : s.n; let bi = -1, bd = Infinity; for (let i = 0; i < n; i++) { if (!isFinite(s.ys[i])) continue; const dd = Math.abs(s.xs[i] - xv); if (dd < bd) { bd = dd; bi = i; } } return bi; };
+  me.set = d => { me.d = d; me.draw(); };
+  me.draw = () => {
+    const d = me.d; if (!d) return;
+    const { ctx, w, h } = prep(cv); if (w < 60 || h < 60) return;
+    ctx.font = FONT;
+    const lg = !!d.logY, y0 = lg ? Math.log10(d.ymin) : d.ymin, y1 = lg ? Math.log10(d.ymax) : d.ymax;
+    let yt, ystep = 1;
+    if (lg) { yt = []; const e0 = Math.round(y0), e1 = Math.round(y1), st = Math.max(1, Math.ceil((e1 - e0) / 6)); for (let e = e0; e <= e1; e += st) yt.push(Math.pow(10, e)); }
+    else { const tk = ticks(d.ymin, d.ymax, Math.max(2, Math.min(5, Math.floor(h / 48)))); yt = tk.out; ystep = tk.step; }
+    const ylab = yt.map(t => d.yFmt ? d.yFmt(t, ystep) : fmtTick(t, ystep));
+    let ml = 0; for (const s of ylab) ml = Math.max(ml, ctx.measureText(s).width);
+    ml = Math.ceil(ml) + (d.yLabel ? 30 : 14);
+    const mr = 14, mt = 10, mb = d.xLabel ? 38 : 24, pw = w - ml - mr, ph = h - mt - mb;
+    const PX = 9, X = x => ml + PX + (x - d.xmin) / (d.xmax - d.xmin) * (pw - 2 * PX);
+    const Y = y => mt + (1 - ((lg ? Math.log10(y) : y) - y0) / (y1 - y0)) * ph;
+    me.g = { ml, pw, mt, ph, X, Y, PX };
+    ctx.lineWidth = 1; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    yt.forEach((t, i) => {
+      const y = Math.round(Y(t)) + 0.5;
+      ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y); ctx.stroke();
+      ctx.fillStyle = C.muted; ctx.fillText(ylab[i], ml - 7, y);
+    });
+    const xtk = ticks(d.xmin, d.xmax, Math.max(2, Math.min(6, Math.floor(pw / 72))));
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = C.muted;
+    for (const t of xtk.out) ctx.fillText(fmtTick(t, xtk.step), X(t), mt + ph + 6);
+    ctx.strokeStyle = C.axis; ctx.beginPath(); ctx.moveTo(ml, Math.round(mt + ph) + 0.5); ctx.lineTo(ml + pw, Math.round(mt + ph) + 0.5); ctx.stroke();
+    ctx.fillStyle = C.ink2; ctx.textBaseline = 'bottom';
+    if (d.xLabel) ctx.fillText(d.xLabel, ml + pw / 2, h - 3);
+    if (d.yLabel) { ctx.save(); ctx.translate(10, mt + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'middle'; ctx.fillText(d.yLabel, 0, 0); ctx.restore(); }
+    ctx.save(); ctx.beginPath(); ctx.rect(ml - 1, mt - 8, pw + 2, ph + 16); ctx.clip();
+    for (const r of (d.refs || [])) { const y = Math.round(Y(r.y)) + 0.5; ctx.strokeStyle = C[r.col] || C.ink; ctx.lineWidth = r.w || 1.25; ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y); ctx.stroke(); }
+    for (const s of d.series) {
+      const col = C[s.col] || s.col, n = s.n == null ? s.xs.length : s.n;
+      if (s.mode === 'line') {
+        ctx.strokeStyle = col; ctx.lineWidth = s.w || 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.beginPath();
+        let started = false;
+        for (let i = 0; i < n; i++) { const yv = s.ys[i]; if (!isFinite(yv) || (lg && yv <= 0)) continue; const px = X(s.xs[i]), py = clampPx(Y(yv)); if (started) ctx.lineTo(px, py); else { ctx.moveTo(px, py); started = true; } }
+        ctx.stroke();
+      } else {
+        const every = s.every || 1;
+        for (let i = 0; i < n; i++) { if (i % every && i !== n - 1) continue; const yv = s.ys[i]; if (!isFinite(yv)) continue; dot(ctx, X(s.xs[i]), clampPx(Y(yv)), s.r || 4, col, s.hollow); }
+      }
+      if (s.head && n > 0 && isFinite(s.ys[n - 1])) dot(ctx, X(s.xs[n - 1]), clampPx(Y(s.ys[n - 1])), 5.5, col);
+    }
+    ctx.restore();
+    if (me.hov != null) {
+      const rows = []; let hx = null;
+      for (const s of d.series) {
+        const i = nearest(s, me.hov); if (i < 0) continue;
+        if (hx == null) hx = s.xs[i];
+        rows.push({ s, i });
+      }
+      if (hx != null) {
+        const px = Math.round(X(hx)) + 0.5;
+        ctx.strokeStyle = C.muted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px, mt); ctx.lineTo(px, mt + ph); ctx.stroke();
+        ctx.save(); ctx.beginPath(); ctx.rect(ml - 1, mt - 8, pw + 2, ph + 16); ctx.clip();
+        for (const r of rows) if (Math.abs(r.s.xs[r.i] - hx) <= (d.xmax - d.xmin) * 0.03) dot(ctx, X(r.s.xs[r.i]), clampPx(Y(r.s.ys[r.i])), 4.5, C[r.s.col] || r.s.col);
+        ctx.restore();
+        me.tipData = { title: d.tipTitle ? d.tipTitle(hx) : '', rows: rows.filter(r => Math.abs(r.s.xs[r.i] - hx) <= (d.xmax - d.xmin) * 0.03).map(r => ({ color: C[r.s.col] || r.s.col, dot: r.s.mode !== 'line', value: (r.s.fmt || (v => fx(v, 4)))(r.s.ys[r.i]), name: r.s.name })) };
+        for (const r of (d.refs || [])) if (r.name) me.tipData.rows.push({ color: C[r.col] || C.ink, value: (r.fmt || (v => fx(v, 4)))(r.y), name: r.name });
+      }
+    }
+  };
+  const move = e => {
+    if (!me.g || !me.d) return;
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left;
+    if (px < me.g.ml - 4 || px > me.g.ml + me.g.pw + 4) { leave(); return; }
+    me.hov = Math.max(me.d.xmin, Math.min(me.d.xmax, me.d.xmin + (px - me.g.ml - me.g.PX) / (me.g.pw - 2 * me.g.PX) * (me.d.xmax - me.d.xmin)));
+    me.draw(); if (me.tipData) showTip(e.clientX, e.clientY, me.tipData.title, me.tipData.rows);
+  };
+  const leave = () => { if (me.hov != null) { me.hov = null; me.tipData = null; me.draw(); } hideTip(); };
+  cv.addEventListener('pointermove', move); cv.addEventListener('pointerdown', move); cv.addEventListener('pointerleave', leave); cv.addEventListener('blur', leave);
+  cv.addEventListener('keydown', e => {
+    if (!me.d || !me.g || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault();
+    const span = me.d.xmax - me.d.xmin, stp = span / 50;
+    me.hov = Math.max(me.d.xmin, Math.min(me.d.xmax, (me.hov == null ? me.d.xmin + span / 2 : me.hov) + (e.key === 'ArrowRight' ? stp : -stp)));
+    me.draw();
+    const r = cv.getBoundingClientRect();
+    if (me.tipData) showTip(r.left + me.g.X(me.hov), r.top + me.g.mt + 10, me.tipData.title, me.tipData.rows);
+  });
+  return me;
+}
+/* Area inside a smooth closed curve sampled evenly along its starting parameter (sixth-order accurate). */
+function loopArea(x, v) {
+  const n = x.length; let a = 0;
+  for (let i = 0; i < n; i++) {
+    const p1 = (i + 1) % n, p2 = (i + 2) % n, p3 = (i + 3) % n, m1 = (i - 1 + n) % n, m2 = (i - 2 + n) % n, m3 = (i - 3 + n) % n;
+    a += x[i] * (45 * (v[p1] - v[m1]) - 9 * (v[p2] - v[m2]) + (v[p3] - v[m3])) - v[i] * (45 * (x[p1] - x[m1]) - 9 * (x[p2] - x[m2]) + (x[p3] - x[m3]));
+  }
+  return Math.abs(a) / 120;
+}
+function polyArea(x, v) { let a = 0; const n = x.length; for (let i = 0, j = n - 1; i < n; j = i++) a += x[j] * v[i] - x[i] * v[j]; return Math.abs(a) / 2; }
+/* ------------------------------------------------------------------
+   Section 0: the system and the phase-space map
+------------------------------------------------------------------- */
+const s0 = { run: false, t: 0, x: X0, v: V0, trail: [[X0, V0]], last: 0 };
+const cvToon = $('#toon'), cvS0 = $('#s0phase');
+function arrow(ctx, x1, y1, x2, y2) {
+  const L = Math.hypot(x2 - x1, y2 - y1);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  if (L < 6) return;
+  const ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+  ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - ux * 7 - uy * 3.5, y2 - uy * 7 + ux * 3.5); ctx.lineTo(x2 - ux * 7 + uy * 3.5, y2 - uy * 7 - ux * 3.5); ctx.closePath(); ctx.fill();
+}
+function drawToon() {
+  const { ctx, w, h } = prep(cvToon); if (w < 60) return;
+  ctx.font = FONT; const cx = w / 2;
+  if (G.sys === 'spring') {
+    const sc = Math.min(64, (w / 2 - 12) / 2.3), y = 56, wall = cx - 2.2 * sc, bx = cx + s0.x * sc;
+    ctx.strokeStyle = C.axis; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(wall, y + 17.5); ctx.lineTo(cx + 2.2 * sc, y + 17.5); ctx.stroke();           // floor
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(wall, y - 26); ctx.lineTo(wall, y + 18); ctx.stroke();       // wall
+    ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.round(cx) + 0.5, y + 18); ctx.lineTo(Math.round(cx) + 0.5, y + 27); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('rest point, x = 0', cx, y + 30);
+    const x1 = wall + 2, x2 = bx - 16, nz = 14;
+    ctx.strokeStyle = C.ink2; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x1, y);
+    for (let i = 1; i <= nz; i++) ctx.lineTo(x1 + (x2 - x1) * (i - 0.5) / nz, y + (i % 2 ? -7 : 7));
+    ctx.lineTo(x2, y); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx - 16, y - 16, 32, 32, 5); else ctx.rect(bx - 16, y - 16, 32, 32);
+    ctx.fill();
+    if (Math.abs(s0.v) > 0.03) { ctx.strokeStyle = C.ink2; ctx.fillStyle = C.ink2; ctx.lineWidth = 1.5; arrow(ctx, bx, y - 27, bx + s0.v * sc * 0.75, y - 27); }
+    ctx.fillStyle = C.muted; ctx.textBaseline = 'bottom'; ctx.textAlign = 'center'; ctx.fillText('velocity v', bx, y - 33);
+  } else {
+    const py = 8, L = h - 34, bx = cx + L * Math.sin(s0.x), by = py + L * Math.cos(s0.x);
+    ctx.strokeStyle = C.axis; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.round(cx) + 0.5, py); ctx.lineTo(Math.round(cx) + 0.5, py + L + 14); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, py, 26, Math.PI / 2 - Math.max(0, s0.x), Math.PI / 2 - Math.min(0, s0.x)); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText('angle x', cx - 34, py + 12);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('x = 0', cx, py + L + 14);
+    ctx.strokeStyle = C.ink2; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cx, py); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(bx, by, 10, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, py, 3, 0, 6.2832); ctx.fill();
+    if (Math.abs(s0.v) > 0.03) { ctx.strokeStyle = C.ink2; ctx.fillStyle = C.ink2; arrow(ctx, bx + 15 * Math.cos(s0.x) * Math.sign(s0.v), by - 15 * Math.sin(s0.x) * Math.sign(s0.v), bx + (15 * Math.sign(s0.v) + 44 * s0.v) * Math.cos(s0.x), by - (15 * Math.sign(s0.v) + 44 * s0.v) * Math.sin(s0.x)); }
+  }
+}
+function s0Draw() {
+  drawToon();
+  const { ctx, w, h } = prep(cvS0); if (w < 60) return;
+  const R = 1.7, Fm = phaseFrame(ctx, w, h, R);
+  clipFrame(ctx, Fm);
+  ctx.strokeStyle = C.axis; ctx.lineWidth = 1.5; contour(ctx, Fm.X, Fm.Y, energy(X0, V0), -R, R);
+  ctx.strokeStyle = C.ink2; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath();
+  s0.trail.forEach((p, i) => { const a = Fm.X(p[0]), b = Fm.Y(p[1]); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); });
+  ctx.stroke();
+  dot(ctx, Fm.X(s0.x), Fm.Y(s0.v), 5.5, C.ink);
+  ctx.restore();
+  ctx.font = FONT; ctx.fillStyle = C.muted; ctx.textAlign = 'left';
+  ctx.textBaseline = 'top'; ctx.fillText('v > 0: moving right', Fm.ox + 7, Fm.oy + 6);
+  ctx.textBaseline = 'bottom'; ctx.fillText('v < 0: moving left', Fm.ox + 7, Fm.oy + Fm.size - 6);
+  $('#s0read').innerHTML = '<span>time t <b>' + fx(s0.t, 2) + '</b></span><span>position x <b>' + fx(s0.x, 3) + '</b></span><span>velocity v <b>' + fx(s0.v, 3) + '</b></span><span>energy E <b>' + fx(energy(s0.x, s0.v), 4) + '</b></span>';
+}
+function s0Reset() { s0.run = false; s0.t = 0; s0.x = X0; s0.v = V0; s0.trail = [[X0, V0]]; $('#s0play').textContent = 'Play'; s0Draw(); }
+function s0Frame(ts) {
+  if (!s0.run) return;
+  const d = Math.min(0.05, (ts - s0.last) / 1000) * 1.6; s0.last = ts;
+  stepExact(s0.x, s0.v, d); s0.x = OX; s0.v = OV; s0.t += d;
+  s0.trail.push([s0.x, s0.v]); if (s0.trail.length > 900) s0.trail.shift();
+  s0Draw(); requestAnimationFrame(s0Frame);
+}
+$('#s0play').addEventListener('click', () => { s0.run = !s0.run; $('#s0play').textContent = s0.run ? 'Pause' : 'Play'; if (s0.run) { s0.last = performance.now(); requestAnimationFrame(s0Frame); } });
+$('#s0reset').addEventListener('click', s0Reset);
+
+/* ------------------------------------------------------------------
+   Section 1: time-reversibility
+------------------------------------------------------------------- */
+const rev = { n: 100, p: 200, anim: false, data: {}, ch: {}, ymax: 1.25 };
+ORDER.forEach(k => { rev.ch[k] = LineChart($('#rev-' + k)); });
+function revCompute() {
+  const n = rev.n, dt = G.dt; let ymax = 1.25;
+  for (const k of ORDER) {
+    const st = INT[k].step; let x = X0, v = V0; const tf = [0], xf = [x];
+    for (let i = 1; i <= n; i++) { st(x, v, dt); x = OX; v = OV; tf.push(i * dt); xf.push(x); }
+    v = -v;                                                   // flip the velocity
+    const tb = [n * dt], xb = [x];
+    for (let j = 1; j <= n; j++) { st(x, v, dt); x = OX; v = OV; tb.push((n - j) * dt); xb.push(x); }
+    rev.data[k] = { tf, xf, tb, xb, miss: Math.hypot(x - X0, v + V0) };
+    for (const a of xf) if (isFinite(a)) ymax = Math.max(ymax, Math.abs(a) * 1.1);
+    for (const a of xb) if (isFinite(a)) ymax = Math.max(ymax, Math.abs(a) * 1.1);
+  }
+  rev.ymax = Math.min(3.2, ymax);
+  // worked one-step example for the explanation
+  const x1 = X0 + V0 * dt, v1 = V0 + F(X0) * dt, x2 = x1 - v1 * dt, v2 = -v1 + F(x1) * dt;
+  $('#revWhy').innerHTML = 'Take one Euler step from ' + mspan('x = 1, v = 0') + ' with ' + mspan('Δt = ' + dts()) + '. The result is ' + mspan('x = ' + fx(x1) + ', v = ' + fx(v1)) +
+    '. Now flip the velocity to ' + mspan(fx(-v1)) + ' and take one more step: ' + mspan('x = ' + fx(x2) + ', v = ' + fx(v2)) +
+    '. It should have been ' + mspan('x = 1') + ' again. Euler works out the whole step from the force at the starting end only. On the way back the “starting end” is the other end of the step, so the return step does not undo the forward one.';
+}
+function missText(m) {
+  if (!isFinite(m)) return { v: 'off the scale', n: 'Does not come back to the start.' };
+  if (m < 1e-11) return { v: m === 0 ? '0' : sci(m, 1), n: 'Back at the start. What is left is the computer’s rounding in the 16th digit.' };
+  if (m < 1e-3) return { v: sci(m, 2), n: 'Tiny, but it is a real error of the method, not rounding. Raise Δt and it grows fast.' };
+  return { v: m >= 1e6 ? sci(m, 2) : m >= 100 ? commas(m) : fx(m, 3), n: 'Does not come back to the start.' };
+}
+function revDraw() {
+  const n = rev.n, p = rev.p;
+  const nf = Math.min(n, Math.floor(p)) + 1, nb = p > n ? Math.min(n, Math.floor(p - n)) + 1 : 0, done = p >= 2 * n;
+  for (const k of ORDER) {
+    const D = rev.data[k];
+    rev.ch[k].set({
+      xmin: 0, xmax: n * G.dt, ymin: -rev.ymax, ymax: rev.ymax, xLabel: 'film time t', yLabel: 'position x',
+      tipTitle: t => 'film time t = ' + fx(t, 2),
+      series: [
+        { name: 'forward', col: INT[k].col, mode: 'line', xs: D.tf, ys: D.xf, n: nf, head: nb === 0, fmt: v => 'x = ' + fx(v, 4) },
+        { name: 'return', col: 'ink', mode: 'dots', xs: D.tb, ys: D.xb, n: nb, every: Math.max(1, Math.ceil(n / 18)), r: 3.5, head: nb > 0, fmt: v => 'x = ' + fx(v, 4) }
+      ]
+    });
+    const mt = missText(D.miss);
+    $('#rev-' + k + '-v').textContent = done ? mt.v : '…';
+    $('#rev-' + k + '-n').textContent = done ? mt.n : '';
+  }
+  $('#revStatus').textContent = p < n ? 'Running forward: step ' + Math.floor(p) + ' of ' + n : !done ? 'Velocity flipped. Return trip: step ' + Math.floor(p - n) + ' of ' + n : 'Round trip finished: ' + n + ' steps out, ' + n + ' steps back.';
+}
+function revPlay() {
+  if (rev.anim) return;
+  rev.anim = true; const n = rev.n, T1 = 2400, HOLD = 700; const t0 = performance.now();
+  (function frame(ts) {
+    if (!rev.anim) return;
+    const e = ts - t0;
+    rev.p = e < T1 ? n * e / T1 : e < T1 + HOLD ? n : Math.min(2 * n, n + n * (e - T1 - HOLD) / T1);
+    revDraw();
+    if (rev.p < 2 * n) requestAnimationFrame(frame); else rev.anim = false;
+  })(t0);
+}
+function revRefresh() { rev.anim = false; revCompute(); rev.p = 2 * rev.n; revDraw(); }
+$('#revN').addEventListener('input', e => { rev.n = +e.target.value; $('#revNv').textContent = rev.n; revRefresh(); });
+$('#revPlay').addEventListener('click', () => { rev.anim = false; requestAnimationFrame(() => { rev.p = 0; revPlay(); }); });
+
+/* ------------------------------------------------------------------
+   Section 2: area preservation
+------------------------------------------------------------------- */
+const NV = 1200, AR_R = 2.6, AR_C = [1.2, 0], AR_RAD = 0.35, AR_TMAX = 400, AR_KEYS = ['exact', 'euler', 'rk4', 'vv'];
+const ar = { run: false, steps: 0, acc: 0, last: 0, speed: 1, c: {}, a0: 1 };
+function arReset() {
+  ar.run = false; ar.steps = 0; ar.acc = 0;
+  for (const k of AR_KEYS) {
+    const x = new Float64Array(NV), v = new Float64Array(NV);
+    for (let i = 0; i < NV; i++) { const th = 6.283185307179586 * i / NV; x[i] = AR_C[0] + AR_RAD * Math.cos(th); v[i] = AR_C[1] + AR_RAD * Math.sin(th); }
+    ar.c[k] = { x, v, dead: false, blown: false, tx: [AR_C[0]], tv: [AR_C[1]], area: 1 };
+  }
+  ar.a0 = loopArea(ar.c.vv.x, ar.c.vv.v);
+  arDraw();
+}
+function arStepOnce() {
+  const dt = G.dt;
+  for (const k of AR_KEYS) {
+    const c = ar.c[k]; if (c.dead) continue;
+    const st = k === 'exact' ? stepExact : INT[k].step, x = c.x, v = c.v; let sx = 0, sv = 0, xmaxAbs = 0;
+    for (let i = 0; i < NV; i++) { st(x[i], v[i], dt); x[i] = OX; v[i] = OV; sx += OX; sv += OV; const ab = OX < 0 ? -OX : OX; if (ab > xmaxAbs) xmaxAbs = ab; }
+    sx /= NV; sv /= NV; c.tx.push(sx); c.tv.push(sv); if (c.tx.length > 600) { c.tx.shift(); c.tv.shift(); }
+    const a = loopArea(x, v) / ar.a0;
+    if (!isFinite(a) || a > 1e12 || !isFinite(sx) || Math.abs(sx) > 1e5) { c.dead = c.blown = true; continue; }
+    // a pendulum patch is torn apart once part of it swings over the top (|x| > π); stop tracking it there
+    if (G.sys === 'pendulum' && xmaxAbs > Math.PI) { c.dead = true; continue; }
+    c.area = a;
+  }
+  ar.steps++;
+}
+function tracePoly(ctx, Fm, x, v) {
+  ctx.beginPath();
+  for (let i = 0; i < x.length; i++) { const a = clampPx(Fm.X(x[i])), b = clampPx(Fm.Y(v[i])); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }
+  ctx.closePath();
+}
+function fmtArea(a) {
+  if (!isFinite(a) || a > 1e12) return 'beyond 10' + sup(12);
+  if (a >= 1e7) return sci(a, 2);
+  if (a >= 1000) return commas(a);
+  if (a >= 10) return a.toFixed(1);
+  if (G.sys !== 'spring') return a.toFixed(3);
+  return Math.abs(a - 1) < 1e-3 ? a.toFixed(6) : a.toFixed(4);
+}
+function arDraw() {
+  const tol = G.sys === 'spring' ? 5e-7 : 5e-4;
+  for (const k of ORDER) {
+    const { ctx, w, h } = prep($('#ar-' + k)); if (w < 60) continue;
+    const Fm = phaseFrame(ctx, w, h, AR_R), col = C[INT[k].col], c = ar.c[k];
+    clipFrame(ctx, Fm);
+    ctx.strokeStyle = C.muted; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(Fm.X(AR_C[0]), Fm.Y(AR_C[1]), AR_RAD / (2 * AR_R) * Fm.size, 0, 6.2832); ctx.stroke();
+    ctx.strokeStyle = rgba(col, 0.6); ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.beginPath();
+    for (let i = 0; i < c.tx.length; i++) { const a = clampPx(Fm.X(c.tx[i])), b = clampPx(Fm.Y(c.tv[i])); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }
+    ctx.stroke();
+    if (!c.dead) { tracePoly(ctx, Fm, c.x, c.v); ctx.fillStyle = rgba(col, 0.3); ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); }
+    tracePoly(ctx, Fm, ar.c.exact.x, ar.c.exact.v); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.25; ctx.stroke();
+    ctx.restore();
+    const a = c.area, off = c.dead || Math.abs(c.tx[c.tx.length - 1]) > AR_R + 0.4 || Math.abs(c.tv[c.tv.length - 1]) > AR_R + 0.4;
+    $('#ar-' + k + '-v').textContent = '× ' + fmtArea(c.blown ? Infinity : a);
+    $('#ar-' + k + '-n').textContent = ar.steps === 0 ? 'Press Play.' : c.dead && !c.blown ? 'Part of the patch swung over the top of the pendulum’s circle. That tears the patch apart, so it is no longer tracked. This was its area just before.' :
+      (c.blown || a > 1 + tol ? 'Growing.' : a < 1 - tol ? 'Shrinking.' : k === 'vv' ? 'Unchanged.' : 'Unchanged to the digits shown.') + (off ? ' The patch has left the map.' : '');
+  }
+  $('#arStatus').textContent = ar.steps * G.dt >= AR_TMAX ? 'Paused after ' + AR_TMAX + ' time units. Press Reset to run again.' : 'step ' + commas(ar.steps) + ' · time ' + fx(ar.steps * G.dt, 1);
+  $('#arPlay').textContent = ar.run ? 'Pause' : 'Play';
+  $('#arStep').disabled = ar.run;
+}
+function arFrame(ts) {
+  if (!ar.run) return;
+  const d = Math.min(0.05, (ts - ar.last) / 1000); ar.last = ts;
+  ar.acc += d * 3 * ar.speed / G.dt; let k = Math.floor(ar.acc); ar.acc -= k; if (k > 80) k = 80;
+  for (let i = 0; i < k && ar.steps * G.dt < AR_TMAX; i++) arStepOnce();
+  if (ar.steps * G.dt >= AR_TMAX) ar.run = false;
+  if (k || !ar.run) arDraw();
+  if (ar.run) requestAnimationFrame(arFrame);
+}
+$('#arPlay').addEventListener('click', () => {
+  if (ar.steps * G.dt >= AR_TMAX) return;
+  ar.run = !ar.run; arDraw(); if (ar.run) { ar.last = performance.now(); ar.acc = 0; requestAnimationFrame(arFrame); }
+});
+$('#arStep').addEventListener('click', () => { if (ar.steps * G.dt < AR_TMAX) { arStepOnce(); arDraw(); } });
+$('#arReset').addEventListener('click', arReset);
+$$('#arSpeed button').forEach(b => b.addEventListener('click', () => { ar.speed = +b.dataset.sp; $$('#arSpeed button').forEach(o => o.setAttribute('aria-pressed', o === b)); }));
+
+/* ---- one step in slow motion: three slides versus one stretch ---- */
+const SH = { p: 0, anim: 0, DT: 0.8, c: [1.0, 0.3], a: 0.45, view: null };
+function shMap(kind, x, v, p) {
+  const dt = SH.DT;
+  if (kind === 'vv') {
+    const s1 = Math.min(1, Math.max(0, p)), s2 = Math.min(1, Math.max(0, p - 1)), s3 = Math.min(1, Math.max(0, p - 2));
+    v = v + s1 * F(x) * dt / 2; x = x + s2 * v * dt; v = v + s3 * F(x) * dt / 2; OX = x; OV = v;
+  } else { const s = Math.min(1, Math.max(0, p / 3)); OX = x + s * v * dt; OV = v + s * F(x) * dt; }
+}
+function shBoundary(kind, p) {
+  const m = 30, xs = [], vs = [], c = SH.c, a = SH.a;
+  const side = (x1, v1, x2, v2) => { for (let i = 0; i < m; i++) { shMap(kind, x1 + (x2 - x1) * i / m, v1 + (v2 - v1) * i / m, p); xs.push(OX); vs.push(OV); } };
+  side(c[0] - a, c[1] - a, c[0] + a, c[1] - a); side(c[0] + a, c[1] - a, c[0] + a, c[1] + a); side(c[0] + a, c[1] + a, c[0] - a, c[1] + a); side(c[0] - a, c[1] + a, c[0] - a, c[1] - a);
+  return { xs, vs };
+}
+function shView() {
+  let x0 = Infinity, x1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+  for (const kind of ['vv', 'euler']) for (let p = 0; p <= 3.001; p += 0.25) { const b = shBoundary(kind, p); for (let i = 0; i < b.xs.length; i++) { x0 = Math.min(x0, b.xs[i]); x1 = Math.max(x1, b.xs[i]); v0 = Math.min(v0, b.vs[i]); v1 = Math.max(v1, b.vs[i]); } }
+  SH.view = { cx: (x0 + x1) / 2, cy: (v0 + v1) / 2, R: Math.max(x1 - x0, v1 - v0) / 2 * 1.12 };
+}
+function shDraw() {
+  if (!SH.view) shView();
+  const p = SH.p, c = SH.c, a = SH.a, NG = 6, m = 24;
+  for (const kind of ['vv', 'euler']) {
+    const { ctx, w, h } = prep($('#sh-' + kind)); if (w < 60) continue;
+    const Fm = phaseFrame(ctx, w, h, SH.view.R, { cx: SH.view.cx, cy: SH.view.cy }), col = C[kind === 'vv' ? 's1' : 's2'];
+    clipFrame(ctx, Fm);
+    ctx.strokeStyle = C.muted; ctx.lineWidth = 1; ctx.strokeRect(Fm.X(c[0] - a), Fm.Y(c[1] + a), Fm.X(c[0] + a) - Fm.X(c[0] - a), Fm.Y(c[1] - a) - Fm.Y(c[1] + a));
+    const b = shBoundary(kind, p);
+    tracePoly(ctx, Fm, b.xs, b.vs); ctx.fillStyle = rgba(col, 0.2); ctx.fill();
+    ctx.strokeStyle = rgba(col, 0.75); ctx.lineWidth = 1; ctx.lineJoin = 'round';
+    for (let g = 1; g < NG; g++) for (const dir of [0, 1]) {
+      ctx.beginPath();
+      for (let i = 0; i <= m; i++) {
+        const u = -a + 2 * a * g / NG, s = -a + 2 * a * i / m;
+        shMap(kind, c[0] + (dir ? s : u), c[1] + (dir ? u : s), p);
+        if (i) ctx.lineTo(Fm.X(OX), Fm.Y(OV)); else ctx.moveTo(Fm.X(OX), Fm.Y(OV));
+      }
+      ctx.stroke();
+    }
+    tracePoly(ctx, Fm, b.xs, b.vs); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+    const area = polyArea(b.xs, b.vs) / (4 * a * a);
+    $('#sh-' + kind + '-v').textContent = '× ' + area.toFixed(3);
+    let note;
+    if (kind === 'vv') note = p <= 0 ? 'Start: a square patch of states.' : p <= 1 ? 'Half kick. Each velocity changes by an amount that depends only on x, so every vertical column slides up or down as one piece.' : p <= 2 ? 'Drift. Each position changes by an amount that depends only on v, so every horizontal row slides sideways as one piece.' : 'Half kick again, using the force at the new positions. The columns slide once more.';
+    else note = p <= 0 ? 'Start: the same square patch.' : (p < 3 ? 'Shown: ' + Math.round(p / 3 * 100) + '% of the way through its one step. ' : '') + 'Euler changes x and v at the same moment, both from the old values. That is not a slide, and the patch is stretched.' + (G.sys === 'spring' ? ' For the spring a full step multiplies the area by 1 + Δt² = ' + (1 + SH.DT * SH.DT).toFixed(2) + '.' : '');
+    $('#sh-' + kind + '-n').textContent = note;
+  }
+  const stage = Math.ceil(SH.p - 1e-9);
+  $$('#shSeg button').forEach(bn => bn.setAttribute('aria-pressed', +bn.dataset.p === stage));
+}
+function shAnimate(target, whole) {
+  const id = ++SH.anim, from = whole ? 0 : SH.p, t0 = performance.now();
+  const MOVE = 1100, HOLD = 550, ease = u => u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
+  (function frame(ts) {
+    if (id !== SH.anim) return;
+    const e = ts - t0;
+    let fin;
+    if (whole) { const seg = Math.min(2, Math.floor(e / (MOVE + HOLD))), u = Math.min(1, (e - seg * (MOVE + HOLD)) / MOVE); SH.p = Math.min(3, seg + ease(Math.max(0, u))); fin = e >= 3 * MOVE + 2 * HOLD; }
+    else { const u = Math.min(1, e / (MOVE * Math.max(0.6, Math.min(1.4, Math.abs(target - from))) * 0.8)); SH.p = from + (target - from) * ease(u); fin = u >= 1; }
+    if (fin) SH.p = whole ? 3 : target;
+    shDraw();
+    if (!fin) requestAnimationFrame(frame);
+  })(t0);
+}
+$$('#shSeg button').forEach(b => b.addEventListener('click', () => shAnimate(+b.dataset.p, false)));
+$('#shPlay').addEventListener('click', () => shAnimate(3, true));
+
+/* ------------------------------------------------------------------
+   Section 3: energy drift
+------------------------------------------------------------------- */
+const en = { T: 100, s: {}, all: LineChart($('#en-all')), zoom: LineChart($('#en-zoom')) };
+function enCompute() {
+  const T = en.T, dt = G.dt, n = Math.round(T / dt), E0 = energy(X0, V0);
+  for (const k of ORDER) {
+    const st = INT[k].step; let x = X0, v = V0;
+    const ts = new Float64Array(n + 1), r = new Float64Array(n + 1), xs = new Float64Array(n + 1), vs = new Float64Array(n + 1);
+    r[0] = 1; xs[0] = x; vs[0] = v; let m = n + 1, mn = 1, mx = 1;
+    for (let i = 1; i <= n; i++) {
+      st(x, v, dt); x = OX; v = OV; const e = energy(x, v) / E0;
+      if (!isFinite(e) || e > 1e290) { m = i; break; }
+      ts[i] = i * dt; r[i] = e; xs[i] = x; vs[i] = v; if (e < mn) mn = e; if (e > mx) mx = e;
+    }
+    en.s[k] = { ts, r, xs, vs, m, mn, mx, end: r[m - 1], full: m === n + 1 };
+  }
+}
+function logFmt(v) { const e = Math.round(Math.log10(v)); return e >= -3 && e <= 4 ? (e < 0 ? v.toFixed(-e) : commas(v)) : '10' + sup(e); }
+function enDraw() {
+  const S = en.s, tt = t => 'time t = ' + fx(t, 1), rf = v => '× ' + fmtRatio(v);
+  let lo = 0.1, hi = 10;
+  for (const k of ORDER) { lo = Math.min(lo, S[k].mn); hi = Math.max(hi, S[k].mx); }
+  en.all.set({
+    xmin: 0, xmax: en.T, ymin: Math.pow(10, Math.floor(Math.log10(lo) + 1e-9)), ymax: Math.pow(10, Math.ceil(Math.log10(hi) - 1e-9)), logY: true,
+    xLabel: 'time t', yFmt: logFmt, tipTitle: tt, refs: [{ y: 1, col: 'ink', name: 'exact', fmt: rf }],
+    series: ORDER.map(k => ({ name: INT[k].name, col: INT[k].col, mode: 'line', xs: S[k].ts, ys: S[k].r, n: S[k].m, fmt: rf }))
+  });
+  let zl = Math.min(1, S.vv.mn, S.rk4.mn), zh = Math.max(1, S.vv.mx, S.rk4.mx), span = Math.max(zh - zl, 1e-9);
+  en.zoom.set({
+    xmin: 0, xmax: en.T, ymin: zl - span * 0.14, ymax: zh + span * 0.14, xLabel: 'time t', tipTitle: tt, refs: [{ y: 1, col: 'ink', name: 'exact', fmt: rf }],
+    series: ['rk4', 'vv'].map(k => ({ name: INT[k].name, col: INT[k].col, mode: 'line', xs: S[k].ts, ys: S[k].r, n: S[k].m, fmt: rf }))
+  });
+  // paths on the map
+  const { ctx, w, h } = prep($('#en-phase'));
+  if (w >= 60) {
+    const R = 2.6, Fm = phaseFrame(ctx, w, h, R); clipFrame(ctx, Fm);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.25; contour(ctx, Fm.X, Fm.Y, energy(X0, V0), -R, R);
+    for (const k of ORDER) {
+      const s = S[k]; ctx.strokeStyle = C[INT[k].col]; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.beginPath();
+      for (let i = 0; i < s.m; i++) { const a = clampPx(Fm.X(s.xs[i])), b = clampPx(Fm.Y(s.vs[i])); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }
+      ctx.stroke();
+    }
+    dot(ctx, Fm.X(X0), Fm.Y(V0), 4.5, C.ink);
+    ctx.restore();
+  }
+  // tiles
+  for (const k of ['euler', 'rk4']) {
+    const s = S[k], d = s.end - 1;
+    $('#en-' + k + '-v').textContent = s.full ? '× ' + fmtRatio(s.end) : 'off the scale';
+    $('#en-' + k + '-n').textContent = !s.full ? 'Grew past 10' + sup(290) + ' before the run finished.' : Math.abs(d) < 1e-10 ? 'No measurable change at this time step.' :
+      d > 1e-3 ? 'Keeps growing: the dot spirals outward on the map.' : d > 0 ? 'A gain of ' + sci(d, 2) + ' of the starting energy so far. Small, but the trend is one-way, so it keeps adding up.' :
+      d < -1e-3 ? 'Keeps draining: the dot spirals inward on the map.' : 'A loss of ' + sci(-d, 2) + ' of the starting energy so far. Tiny, but the trend is one-way, so it keeps adding up. Raise Δt to see it clearly.';
+  }
+  const bspan = Math.max(S.vv.mx - S.vv.mn, 1e-12), bd = Math.max(2, Math.min(8, Math.ceil(-Math.log10(bspan)) + 2));
+  $('#en-vv-v').textContent = '× ' + S.vv.mn.toFixed(bd) + ' to ' + S.vv.mx.toFixed(bd);
+  $('#en-vv-n').textContent = 'Wobbles inside this band and never leaves it. At the end of the run it is at × ' + fmtRatio(S.vv.end) + '.';
+  // table view
+  const tb = $('#enTable'); tb.replaceChildren();
+  const hr = el('tr'); ['time t', 'Euler', 'RK4', 'Velocity-Verlet'].forEach(t => hr.appendChild(el('th', null, t))); tb.appendChild(hr);
+  for (let t = 0; t <= en.T; t += 10) {
+    const tr = el('tr'); tr.appendChild(el('td', null, String(t)));
+    for (const k of ORDER) { const i = Math.round(t / G.dt); tr.appendChild(el('td', null, i < S[k].m ? '× ' + fmtRatio(S[k].r[i]) : 'off the scale')); }
+    tb.appendChild(tr);
+  }
+  // conserved "shadow" quantity for the spring
+  if (G.sys === 'spring') {
+    const q = (x, v) => 0.5 * v * v + 0.5 * (1 - G.dt * G.dt / 4) * x * x, at = {}; let x = X0, v = V0; at[0] = q(x, v);
+    for (let i = 1; i <= 1000; i++) { stepVV(x, v, G.dt); x = OX; v = OV; if (i === 1 || i === 50 || i === 1000) at[i] = q(x, v); }
+    $('#shadow').innerHTML = 'For the spring you can check this by hand. The quantity ' + mspan('½v^2 + ½(1 − Δt^2/4)x^2') + ' comes out the same after every velocity-Verlet step. With ' + mspan('Δt = ' + dts()) +
+      ' it is ' + fx(at[0], 8) + ' at the start, ' + fx(at[1], 8) + ' after 1 step, ' + fx(at[50], 8) + ' after 50 steps and ' + fx(at[1000], 8) + ' after 1,000 steps. That fixed number pins the dot to one closed loop.';
+  }
+}
+function enRefresh() { enCompute(); enDraw(); }
+/* ------------------------------------------------------------------
+   Section 4: the three Verlet algorithms, one line at a time
+------------------------------------------------------------------- */
+const st = { alg: 'vv', n: 0, k: 0, chx: LineChart($('#st-x')), chv: LineChart($('#st-v')) };
+const NSUB = { vv: 3, verlet: 3, lf: 4 }, ST_MAX = 2000;
+const hs = n => fx(n + 0.5, 1);                         // label of a half step, e.g. −0.5, 0.5, 1.5
+const ix = i => String(i).replace('-', MIN);
+
+/* Run each algorithm with its own formulas, up to and including step N. */
+function stRun(alg, N) {
+  const dt = G.dt, x = [X0], f = [F(X0)];
+  if (alg === 'vv') {
+    const v = [V0];
+    for (let n = 0; n <= N; n++) { x[n + 1] = x[n] + v[n] * dt + 0.5 * f[n] * dt * dt; f[n + 1] = F(x[n + 1]); v[n + 1] = v[n] + 0.5 * (f[n] + f[n + 1]) * dt; }
+    return { x, v, f };
+  }
+  if (alg === 'verlet') {
+    const xm = X0 - V0 * dt + 0.5 * f[0] * dt * dt, v = [];
+    for (let n = 0; n <= N; n++) { f[n] = F(x[n]); const xp = n === 0 ? xm : x[n - 1]; x[n + 1] = 2 * x[n] - xp + f[n] * dt * dt; v[n] = (x[n + 1] - xp) / (2 * dt); }
+    return { x, v, f, xm };
+  }
+  const vm = V0 - 0.5 * f[0] * dt, vh = [], v = [];
+  for (let n = 0; n <= N; n++) { f[n] = F(x[n]); const vp = n === 0 ? vm : vh[n - 1]; vh[n] = vp + f[n] * dt; x[n + 1] = x[n] + vh[n] * dt; v[n] = 0.5 * (vp + vh[n]); }
+  return { x, v, f, vh, vm };
+}
+
+const ST_TEXT = {
+  vv: {
+    carry: 'Velocity-Verlet carries the position and the velocity at the same instant, plus the force. This is what LAMMPS uses by default.',
+    eqs: [['x(t+Δt) = x(t) + v(t)Δt + {f(t)|2m}Δt^2', 'equation (1) in the notes'], ['v(t+Δt) = v(t) + {f(t) + f(t+Δt)|2m}Δt', 'equation (2)']]
+  },
+  verlet: {
+    carry: 'Verlet carries the current position and the previous position. There is no velocity in the algorithm at all: it is worked out afterwards, and only if you want it.',
+    eqs: [['x(t+Δt) = 2x(t) − x(t−Δt) + {f(t)|m}Δt^2', 'equation (5) in the notes'], ['v(t) = {x(t+Δt) − x(t−Δt)|2Δt}', 'velocity, if wanted']]
+  },
+  lf: {
+    carry: 'Leap-frog carries the position, and a velocity that sits half a time step away from it. The two take turns jumping over each other. This is the GROMACS default.',
+    eqs: [['v(t+½Δt) = v(t−½Δt) + {f(t)|m}Δt', 'equation (6) in the notes'], ['x(t+Δt) = x(t) + v(t+½Δt)Δt', 'equation (7)']]
+  }
+};
+
+function stSubs(alg, n, R) {
+  const d = dts(), a = n, b = n + 1, sp = G.sys === 'spring', x = R.x, v = R.v, f = R.f;
+  const force = (i, xv, fv) => ({ sym: sp ? 'f_{' + ix(i) + '} = −k x_{' + ix(i) + '}' : 'f_{' + ix(i) + '} = −sin x_{' + ix(i) + '}', num: sp ? '= −(1)(' + fx(xv) + ')' : '= −sin(' + fx(xv) + ')', res: 'f_{' + ix(i) + '} = ' + fx(fv) });
+  if (alg === 'vv') return [
+    Object.assign({ t: 'New position', w: 'Move with the current velocity, then add the bend caused by the current force. It is the school formula for constant acceleration: distance = starting velocity × time + ½ × acceleration × time², where the acceleration is force ÷ mass.',
+      sym: 'x_{' + b + '} = x_{' + a + '} + v_{' + a + '}Δt + {f_{' + a + '}|2m}Δt^2', num: '= ' + fx(x[a]) + ' + ' + par(v[a]) + '(' + d + ') + {' + fx(f[a]) + '|2 × 1}(' + d + ')^2', res: 'x_{' + b + '} = ' + fx(x[b]), ins: ['xa', 'va', 'fa'], out: 'xb' }),
+    Object.assign({ t: 'Force at the new position', w: 'Forces depend only on positions, so the new force can be worked out as soon as the new position is known. In real MD this is the expensive line.', ins: ['xb'], out: 'fb' }, force(b, x[b], f[b])),
+    Object.assign({ t: 'New velocity', w: 'Change the velocity using the average of the old force and the new force. Using both ends of the step is what makes the algorithm time-reversible.',
+      sym: 'v_{' + b + '} = v_{' + a + '} + {f_{' + a + '} + f_{' + b + '}|2m}Δt', num: '= ' + fx(v[a]) + ' + {' + par(f[a]) + ' + ' + par(f[b]) + '|2 × 1}(' + d + ')', res: 'v_{' + b + '} = ' + fx(v[b]), ins: ['va', 'fa', 'fb'], out: 'vb' })
+  ];
+  if (alg === 'verlet') {
+    const p = n - 1, xp = n === 0 ? R.xm : x[p];
+    return [
+      Object.assign({ t: 'Force at the current position', w: 'The one force calculation of the step.', ins: ['xa'], out: 'fa' }, force(a, x[a], f[a])),
+      { t: 'New position', w: 'Repeat the displacement of the last step, ' + mspan('x_{' + a + '} − x_{' + ix(p) + '}') + ', and add a correction from the force. No velocity appears anywhere.',
+        sym: 'x_{' + b + '} = 2x_{' + a + '} − x_{' + ix(p) + '} + {f_{' + a + '}|m}Δt^2', num: '= 2(' + fx(x[a]) + ') − ' + par(xp) + ' + {' + fx(f[a]) + '|1}(' + d + ')^2', res: 'x_{' + b + '} = ' + fx(x[b]), ins: ['xa', 'xp', 'fa'], out: 'xb' },
+      { t: 'Velocity at the current time, only if you want it', w: 'The slope between the positions on either side. It could not be computed until now, because it needs ' + mspan('x_{' + b + '}') + '. In Verlet the velocity is always one step late.',
+        sym: 'v_{' + a + '} = {x_{' + b + '} − x_{' + ix(p) + '}|2Δt}', num: '= {' + fx(x[b]) + ' − ' + par(xp) + '|2(' + d + ')}', res: 'v_{' + a + '} = ' + fx(v[a]), ins: ['xb', 'xp'], out: 'va' }
+    ];
+  }
+  const vmv = n === 0 ? R.vm : R.vh[n - 1], vpv = R.vh[n];
+  return [
+    Object.assign({ t: 'Force at the current position', w: 'The one force calculation of the step.', ins: ['xa'], out: 'fa' }, force(a, x[a], f[a])),
+    { t: 'Kick: the velocity jumps over the position', w: 'The velocity sits half a step behind the position. The force at the position pushes it to half a step ahead.',
+      sym: 'v_{' + hs(n) + '} = v_{' + hs(n - 1) + '} + {f_{' + a + '}|m}Δt', num: '= ' + fx(vmv) + ' + {' + fx(f[a]) + '|1}(' + d + ')', res: 'v_{' + hs(n) + '} = ' + fx(vpv), ins: ['vm', 'fa'], out: 'vp' },
+    { t: 'Drift: the position jumps over the velocity', w: 'The position moves a whole step, using the velocity that sits exactly in the middle of that step.',
+      sym: 'x_{' + b + '} = x_{' + a + '} + v_{' + hs(n) + '}Δt', num: '= ' + fx(x[a]) + ' + ' + par(vpv) + '(' + d + ')', res: 'x_{' + b + '} = ' + fx(x[b]), ins: ['xa', 'vp'], out: 'xb' },
+    { t: 'Velocity at the whole step, only if you want it', w: 'The average of the two half-step velocities on either side. It is needed to get the kinetic energy at the same instant as the potential energy.',
+      sym: 'v_{' + a + '} = ½(v_{' + hs(n - 1) + '} + v_{' + hs(n) + '})', num: '= ½(' + fx(vmv) + ' + ' + par(vpv) + ')', res: 'v_{' + a + '} = ' + fx(v[a]), ins: ['vm', 'vp'], out: 'vw' }
+  ];
+}
+
+/* Diagram of which numbers feed which. Node: [row, column in units of Δt, letter, index offset]. */
+const STENCIL = {
+  vv:     { cmin: -0.42, cmax: 1.38, known: ['xa', 'va', 'fa'], nodes: { xa: [0, 0, 'x', 0], xb: [0, 1, 'x', 1], fa: [1, 0, 'f', 0], fb: [1, 1, 'f', 1], va: [2, 0, 'v', 0], vb: [2, 1, 'v', 1] } },
+  verlet: { cmin: -1.36, cmax: 1.3, known: ['xp', 'xa'], nodes: { xp: [0, -1, 'x', -1], xa: [0, 0, 'x', 0], xb: [0, 1, 'x', 1], fa: [1, 0, 'f', 0], va: [2, 0, 'v', 0] } },
+  lf:     { cmin: -0.92, cmax: 1.3, known: ['xa', 'vm'], nodes: { xa: [0, 0, 'x', 0], xb: [0, 1, 'x', 1], fa: [1, 0, 'f', 0], vm: [2, -0.5, 'v', -0.5], vw: [2, 0, 'v', 0], vp: [2, 0.5, 'v', 0.5] } }
+};
+function stencilSVG(alg, n, k, subs) {
+  const S = STENCIL[alg], W = 520, H = 222, L = 92, RR = W - 14;
+  const cX = c => L + (c - S.cmin) / (S.cmax - S.cmin) * (RR - L), rY = r => 36 + r * 54, r1 = v => Math.round(v * 10) / 10;
+  const state = {}; Object.keys(S.nodes).forEach(id => { state[id] = 'unknown'; });
+  S.known.forEach(id => { state[id] = 'known'; });
+  for (let j = 0; j < k; j++) state[subs[j].out] = 'known';
+  if (k > 0) { subs[k - 1].ins.forEach(id => { state[id] = 'in'; }); state[subs[k - 1].out] = 'out'; }
+  let s = '<svg class="stencil" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Diagram of which numbers are used and which is computed on the current line">';
+  s += '<defs><marker id="arh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--s1)"/></marker></defs>';
+  ['position x', 'force f', 'velocity v'].forEach((t, i) => { s += '<text x="6" y="' + (rY(i) + 4) + '">' + t + '</text>'; });
+  const ay = rY(2) + 50; s += '<line class="axisline" x1="' + (L - 6) + '" y1="' + ay + '" x2="' + RR + '" y2="' + ay + '"/>';
+  const cols = Array.from(new Set(Object.values(S.nodes).map(nd => nd[1]))).sort((p, q) => p - q);
+  for (const c of cols) { s += '<line class="axisline" x1="' + r1(cX(c)) + '" y1="' + (ay - 4) + '" x2="' + r1(cX(c)) + '" y2="' + (ay + 4) + '"/><text x="' + r1(cX(c)) + '" y="' + (ay + 18) + '" text-anchor="middle">t = ' + fx((n + c) * G.dt, 2) + '</text>'; }
+  if (k > 0) {
+    const o = S.nodes[subs[k - 1].out], bx = cX(o[1]), by = rY(o[0]);
+    for (const id of subs[k - 1].ins) {
+      const A = S.nodes[id], ax = cX(A[1]), ayy = rY(A[0]), dx = bx - ax, dy = by - ayy, len = Math.hypot(dx, dy);
+      let blocked = false;
+      for (const oid of Object.keys(S.nodes)) {
+        const q = S.nodes[oid]; if (q === A || q === o) continue;
+        const qx = cX(q[1]), qy = rY(q[0]), tt = Math.max(0, Math.min(1, ((qx - ax) * dx + (qy - ayy) * dy) / (len * len)));
+        if (Math.hypot(ax + dx * tt - qx, ayy + dy * tt - qy) < 20) blocked = true;
+      }
+      if (blocked && Math.abs(dy) < 1) {             // same row with a node in between: arc over or under it
+        const up = A[0] === 0 ? -1 : 1, sg = dx > 0 ? 1 : -1;
+        s += '<path class="arrow" marker-end="url(#arh)" d="M' + r1(ax + sg * 12) + ',' + r1(ayy + up * 16) + ' Q' + r1((ax + bx) / 2) + ',' + r1(ayy + up * 54) + ' ' + r1(bx - sg * 12) + ',' + r1(by + up * 18) + '"/>';
+      } else {
+        const tx = Math.abs(dx) > 1e-6 ? 31 / Math.abs(dx) : Infinity, ty = Math.abs(dy) > 1e-6 ? 17 / Math.abs(dy) : Infinity, tt = Math.min(tx, ty);
+        if (2 * tt < 0.95) s += '<line class="arrow" marker-end="url(#arh)" x1="' + r1(ax + dx * tt) + '" y1="' + r1(ayy + dy * tt) + '" x2="' + r1(bx - dx * (tt + 3 / len)) + '" y2="' + r1(by - dy * (tt + 3 / len)) + '"/>';
+      }
+    }
+  }
+  for (const id of Object.keys(S.nodes)) {
+    const nd = S.nodes[id], x = r1(cX(nd[1])), y = rY(nd[0]), idx = n + nd[3], lab = Number.isInteger(idx) ? ix(idx) : fx(idx, 1);
+    s += '<g class="nd ' + state[id] + '"><rect x="' + (x - 29) + '" y="' + (y - 15) + '" width="58" height="30" rx="8"/><text x="' + x + '" y="' + (y + 5) + '" text-anchor="middle"><tspan font-style="italic">' + nd[2] + '</tspan><tspan dy="4" font-size="12">' + lab + '</tspan></text></g>';
+  }
+  return s + '</svg>';
+}
+
+function stRender() {
+  const isCmp = st.alg === 'cmp';
+  $('#stPane').hidden = isCmp; $('#cmpPane').hidden = !isCmp;
+  $$('#stTabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.alg === st.alg));
+  if (isCmp) { cmpRender(); return; }
+  const alg = st.alg, n = st.n, k = st.k, K = NSUB[alg], dt = G.dt, R = stRun(alg, n + 1), subs = stSubs(alg, n, R), sp = G.sys === 'spring';
+  $('#stCarry').textContent = ST_TEXT[alg].carry;
+  $('#stEqs').innerHTML = ST_TEXT[alg].eqs.map(e => '<div class="eq">' + mspan(e[0]) + '<span class="tag">' + e[1] + '</span></div>').join('');
+  // start card
+  const f0 = (sp ? 'f_0 = −k x_0 = ' : 'f_0 = −sin x_0 = ') + fx(R.f[0]);
+  let start = '<b>Start.</b> Given: ' + mspan('x_0 = ' + fx(X0)) + ' and ' + mspan('v_0 = ' + fx(V0)) + '. ';
+  if (alg === 'vv') start += 'One more number is needed before the first step, the force at the start: ' + mspan(f0) + '.';
+  else if (alg === 'verlet') start += 'Verlet carries two positions, so before the first step it needs the position one step before the start. That is equation (1) run backwards (replace ' + mspan('Δt') + ' by ' + mspan('−Δt') + '), with ' + mspan(f0) + ':<div class="sub-m">' + mspan('x_{−1} = x_0 − v_0Δt + {f_0|2m}Δt^2') + '<br>' + mspan('= ' + fx(X0) + ' − ' + par(V0) + '(' + dts() + ') + {' + fx(R.f[0]) + '|2 × 1}(' + dts() + ')^2') + '<br><span class="sub-r">' + mspan('x_{−1} = ' + fx(R.xm)) + '</span></div>';
+  else start += 'Leap-frog carries a velocity half a step behind the position, so before the first step it needs a half kick backwards, with ' + mspan(f0) + ':<div class="sub-m">' + mspan('v_{−0.5} = v_0 − {f_0|2m}Δt') + '<br>' + mspan('= ' + fx(V0) + ' − {' + fx(R.f[0]) + '|2 × 1}(' + dts() + ')') + '<br><span class="sub-r">' + mspan('v_{−0.5} = ' + fx(R.vm)) + '</span></div>';
+  $('#stStart').innerHTML = start;
+  $('#stHead').textContent = 'Step ' + (n + 1) + ': from time t = ' + fx(n * dt, 2) + ' to t = ' + fx((n + 1) * dt, 2);
+  // the lines of this step
+  $('#stSubs').innerHTML = subs.map((s, j) => {
+    const cls = j < k - 1 ? 'done' : j === k - 1 ? 'active' : 'pending', shown = j < k;
+    return '<li class="' + cls + '"><div class="sub-t">' + s.t + '</div><div class="sub-w">' + s.w + '</div><div class="sub-m">' + mspan(s.sym) +
+      (shown ? '<br>' + mspan(s.num) + '<br><span class="sub-r">' + mspan(s.res) + '</span>' : '') + '</div></li>';
+  }).join('');
+  // summary box
+  let done;
+  if (k < K) done = k === 0 ? 'Press <b>Next line</b> to do the first line of this step.' : k + ' of ' + K + ' lines done.';
+  else {
+    const tE = alg === 'vv' ? n + 1 : n, e = 0.5 * R.v[tE] * R.v[tE] + U(R.x[tE]), ex = refAt((n + 1) * dt)[0];
+    done = '<b>Step finished.</b> Energy at ' + mspan('t = ' + fx(tE * dt, 2)) + ': ' + mspan('E_{' + tE + '} = ½m v_{' + tE + '}^2 + U(x_{' + tE + '}) = ' + fx(e)) + ' (it started at ' + fx(energy(X0, V0)) + '). ' +
+      'The exact position at ' + mspan('t = ' + fx((n + 1) * dt, 2)) + ' is ' + fx(ex) + ', so the error in ' + mspan('x_{' + (n + 1) + '}') + ' is ' + fx(R.x[n + 1] - ex) + '.';
+  }
+  $('#stDone').innerHTML = done;
+  $('#stStencil').innerHTML = stencilSVG(alg, n, k, subs);
+  $('#stStencilCap').textContent = k === 0 ? 'What is known before this step starts.' : 'Line ' + k + ': ' + subs[k - 1].t.toLowerCase() + '.';
+  $('#stBack').disabled = n === 0 && k === 0;
+  $('#stNext').disabled = $('#stFinish').disabled = $('#stTen').disabled = n >= ST_MAX;
+  stCharts(alg, n, k, R); stTable(alg, n, k, R);
+}
+function stKnown(alg, n, k) {
+  if (alg === 'vv') return { x: j => j <= n || (j === n + 1 && k >= 1), f: j => j <= n || (j === n + 1 && k >= 2), v: j => j <= n || (j === n + 1 && k >= 3) };
+  if (alg === 'verlet') return { x: j => j <= n || (j === n + 1 && k >= 2), f: j => j < n || (j === n && k >= 1), v: j => j === 0 || j < n || (j === n && k >= 3) };
+  return { x: j => j <= n || (j === n + 1 && k >= 3), f: j => j < n || (j === n && k >= 1), vh: j => j < n || (j === n && k >= 2), v: j => j === 0 || j < n || (j === n && k >= 4) };
+}
+function stCharts(alg, n, k, R) {
+  const dt = G.dt, K = stKnown(alg, n, k), tmin = alg === 'vv' ? 0 : -dt, tmax = Math.max(12, n + 2) * dt;
+  const et = [], exx = [], evv = []; for (let i = 0; i <= 240; i++) { const t = tmin + (tmax - tmin) * i / 240, e = refAt(t); et.push(t); exx.push(e[0]); evv.push(e[1]); }
+  const xt = [], xx = [], vt = [], vv = [], ht = [], hv = [];
+  if (alg === 'verlet') { xt.push(-dt); xx.push(R.xm); }
+  if (alg === 'lf') { ht.push(-0.5 * dt); hv.push(R.vm); }
+  for (let j = 0; j <= n + 1; j++) {
+    if (K.x(j)) { xt.push(j * dt); xx.push(R.x[j]); }
+    if (K.v(j)) { vt.push(j * dt); vv.push(j === 0 ? V0 : R.v[j]); }
+    if (alg === 'lf' && K.vh(j)) { ht.push((j + 0.5) * dt); hv.push(R.vh[j]); }
+  }
+  const rr = n > 60 ? 2.5 : 4, f6 = v => fx(v, 6), tt = t => 'time t = ' + fx(t, 2);
+  st.chx.set({ xmin: tmin, xmax: tmax, ymin: -1.25, ymax: 1.25, xLabel: 'time t', tipTitle: tt, series: [
+    { name: 'exact x', col: 'ink', mode: 'line', w: 1.25, xs: et, ys: exx, fmt: f6 }, { name: 'computed x', col: 's1', mode: 'dots', r: rr, xs: xt, ys: xx, fmt: f6 }] });
+  const vs = [{ name: 'exact v', col: 'ink', mode: 'line', w: 1.25, xs: et, ys: evv, fmt: f6 }];
+  if (alg === 'lf') { vs.push({ name: 'v at whole steps (averaged)', col: 's1', mode: 'dots', hollow: true, r: rr, xs: vt, ys: vv, fmt: f6 }); vs.push({ name: 'v at half steps (carried)', col: 's1', mode: 'dots', r: rr, xs: ht, ys: hv, fmt: f6 }); }
+  else vs.push({ name: 'computed v', col: 's1', mode: 'dots', r: rr, xs: vt, ys: vv, fmt: f6 });
+  st.chv.set({ xmin: tmin, xmax: tmax, ymin: -1.25, ymax: 1.25, xLabel: 'time t', tipTitle: tt, series: vs });
+}
+function stTable(alg, n, k, R) {
+  const dt = G.dt, K = stKnown(alg, n, k), tb = $('#stTable'), lf = alg === 'lf';
+  const heads = ['step', 'time t', 'x', 'f'].concat(lf ? ['v half a step later'] : [], ['v', 'energy E', 'exact x', 'error in x']);
+  tb.replaceChildren(); const hr = el('tr'); heads.forEach(h => hr.appendChild(el('th', null, h))); tb.appendChild(hr);
+  const cell = (ok, val) => ok ? el('td', null, val) : el('td', 'pend', '·');
+  for (let j = 0; j <= n + 1; j++) {
+    if (!K.x(j)) break;
+    const tr = el('tr'); if (j === (alg === 'vv' ? n + 1 : n)) tr.className = 'cur';
+    const vj = j === 0 ? V0 : R.v[j], vk = K.v(j), ex = refAt(j * dt)[0];
+    tr.appendChild(el('td', null, String(j))); tr.appendChild(el('td', null, fx(j * dt, 2)));
+    tr.appendChild(el('td', null, fx(R.x[j]))); tr.appendChild(cell(K.f(j), fx(R.f[j])));
+    if (lf) tr.appendChild(cell(K.vh(j), fx(R.vh[j])));
+    tr.appendChild(cell(vk, fx(vj))); tr.appendChild(cell(vk, fx(0.5 * vj * vj + U(R.x[j]))));
+    tr.appendChild(el('td', null, fx(ex))); tr.appendChild(el('td', null, fx(R.x[j] - ex)));
+    tb.appendChild(tr);
+  }
+  const wrap = $('#stTblWrap'); wrap.scrollTop = wrap.scrollHeight;
+}
+function cmpRender() {
+  const N = 12, dt = G.dt, A = stRun('vv', 1001), B = stRun('verlet', 1001), Cc = stRun('lf', 1001), tb = $('#cmpTable');
+  tb.replaceChildren(); const hr = el('tr'); ['step', 'time t', 'x, velocity-Verlet', 'x, Verlet', 'x, leap-frog', 'largest difference'].forEach(h => hr.appendChild(el('th', null, h))); tb.appendChild(hr);
+  for (let j = 0; j <= N; j++) {
+    const d = Math.max(Math.abs(A.x[j] - B.x[j]), Math.abs(A.x[j] - Cc.x[j]), Math.abs(B.x[j] - Cc.x[j])), tr = el('tr');
+    [String(j), fx(j * dt, 2), fx(A.x[j], 10), fx(B.x[j], 10), fx(Cc.x[j], 10), d === 0 ? '0' : sci(d, 1)].forEach(t => tr.appendChild(el('td', null, t)));
+    tb.appendChild(tr);
+  }
+  let dx = 0, dv = 0;
+  for (let j = 0; j <= 1000; j++) {
+    dx = Math.max(dx, Math.abs(A.x[j] - B.x[j]), Math.abs(A.x[j] - Cc.x[j]));
+    const va = j === 0 ? V0 : A.v[j]; dv = Math.max(dv, Math.abs(va - B.v[j]), Math.abs(va - Cc.v[j]));
+  }
+  $('#cmpNote').innerHTML = 'Over 1,000 steps with ' + mspan('Δt = ' + dts()) + ', the largest difference between any two of the three is ' + (dx === 0 ? '0' : sci(dx, 1)) + ' in position and ' + (dv === 0 ? '0' : sci(dv, 1)) +
+    ' in velocity (comparing velocity-Verlet’s ' + mspan('v') + ', Verlet’s slope formula and leap-frog’s average of half steps). Both are the computer’s rounding, nothing more.';
+}
+function stGo(dn) {
+  if (st.alg === 'cmp') return;
+  const K = NSUB[st.alg];
+  if (dn === 'next') { if (st.n === 0 && st.k === 0) st.k = 1; else if (st.k < K) st.k++; else { st.n++; st.k = 1; } }
+  else if (dn === 'back') { if (st.k > 1) st.k--; else if (st.n > 0) { st.n--; st.k = K; } else st.k = 0; }
+  else if (dn === 'finish') { if (st.k < K) st.k = K; else { st.n++; st.k = K; } }
+  else if (dn === 'ten') { st.n += st.k < K ? 9 : 10; st.k = K; }
+  else { st.n = 0; st.k = 0; }
+  if (st.n > ST_MAX) st.n = ST_MAX;
+  stRender();
+}
+$('#stNext').addEventListener('click', () => stGo('next'));
+$('#stBack').addEventListener('click', () => stGo('back'));
+$('#stFinish').addEventListener('click', () => stGo('finish'));
+$('#stTen').addEventListener('click', () => stGo('ten'));
+$('#stReset').addEventListener('click', () => stGo('reset'));
+$$('#stTabs button').forEach(b => b.addEventListener('click', () => { st.alg = b.dataset.alg; st.n = 0; st.k = 0; stRender(); }));
+
+/* ------------------------------------------------------------------
+   Wiring
+------------------------------------------------------------------- */
+function redrawAll() { s0Draw(); revDraw(); arDraw(); shDraw(); enDraw(); st.chx.draw(); st.chv.draw(); }
+function onDt() { revRefresh(); arReset(); enRefresh(); st.n = 0; st.k = 0; stRender(); }
+function setSys(s) {
+  G.sys = s; F = SYS[s].f; U = SYS[s].U; refTab = null; SH.view = null; SH.p = 0; SH.anim++;
+  document.body.dataset.sys = s;
+  $$('#sysSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.sys === s));
+  s0Reset(); shDraw(); onDt();
+}
+$$('#sysSeg button').forEach(b => b.addEventListener('click', () => setSys(b.dataset.sys)));
+$('#dt').addEventListener('input', e => { G.dt = +e.target.value; $('#dtv').textContent = G.dt.toFixed(2); onDt(); });
+
+$$('[data-m]').forEach(e => { e.innerHTML = M(e.dataset.m); });
+readColors();
+setSys('spring');
+let rz = 0;
+if (window.ResizeObserver) new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(redrawAll); }).observe(document.body);
+else window.addEventListener('resize', redrawAll);
+if (window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const fn = () => { readColors(); redrawAll(); }; if (mq.addEventListener) mq.addEventListener('change', fn); else if (mq.addListener) mq.addListener(fn); }
+window.mdDebug = { G, rev, ar, en, st, SH, stRun, arStepOnce, arDraw, refAt };
+})();
+</script>
+</body>
+</html>
